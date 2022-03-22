@@ -62,15 +62,16 @@ testsuite_t = xml_schema(
 )
 
 
-junit_single_t = xml_schema(suites=item(testsuite_t, multi=True, src='testsuite'))
-junit_many_t = xml_schema(suites=item(testsuite_t, multi=True, src='testsuites/testsuite'))
+junit_single_t = xml_schema(suites=item(testsuite_t, multi=True, src='.'))
+junit_many_t = xml_schema(suites=item(testsuite_t, multi=True, src='testsuite'))
 
 
 def parse(fname):
     root = ET.parse(fname)
-    if root.find('testsuite'):
+    root_tag = root.getroot().tag
+    if root_tag == 'testsuite':
         s = junit_single_t
-    elif root.find('testsuites'):
+    elif root_tag == 'testsuites':
         s = junit_many_t
     else:
         return []

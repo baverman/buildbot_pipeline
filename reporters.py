@@ -4,11 +4,25 @@ import itertools
 from twisted.internet import defer
 from buildbot.reporters import gerrit, utils
 from buildbot.data import resultspec
+from buildbot.process import results
 
 
 class GerritStatusPush(gerrit.GerritStatusPush):
     def isBuildReported(self, build):
         return build['properties']['buildername'][0].startswith('~prop-builder')
+
+    def send_start_notification(self, build):
+        if build['results'] not in (results.SUCCESS, results.WARNINGS):
+            return
+
+        url = utils.getURLForBuild(self.master, build['builder']['builderid'], build['number'])
+
+        result = {
+            'message': f'Build started {url}',
+            'labels': {'Verified': 0},
+        }
+
+        self.sendCodeReviews(build, result)
 
     @defer.inlineCallbacks
     def buildsetComplete(self, key, msg):
@@ -16,10 +30,10 @@ class GerritStatusPush(gerrit.GerritStatusPush):
             return
 
         bsid = msg['bsid']
-        res = yield utils.getDetailsForBuildset(self.master, bsid, want_properties=False,
-                                                want_steps=self.wantSteps, want_logs=self.wantLogs,
-                                                want_logs_content=self.wantLogs)
+        res = yield utils.getDetailsForBuildset(self.master, bsid, want_properties=True)
         buildset = res['buildset']
+        if res['builds'] and res['builds'][0]['builder']['name'] == '~distributor':
+            self.send_start_notification(res['builds'][0])
 
         buildsets = yield self.master.data.get(
             ('buildsets',),
