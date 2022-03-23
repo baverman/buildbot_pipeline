@@ -21,8 +21,9 @@ def builder_locks(props):
     return [get_lock('pipeline-' + buildername, concurency).access('counting')]
 
 
-def select_workdir_index(build, key, concurency):
-    for i in range(concurency):
+def select_workdir_index(build, key):
+    i = 0
+    while True:
         k = key + str(i)
         if k in _current_builds:
             if _current_builds[k]['build'].finished:
@@ -31,12 +32,11 @@ def select_workdir_index(build, key, concurency):
         else:
             _current_builds[k] = {'build': build}
             return i
-
-    raise Exception(f'There are no available workdirs for {key}')
+        i += 1
 
 
 def builder_name_to_path(name):
-    return name.strip('.').replace('/', '-').replace('\\', '-')
+    return name.strip('.').replace('/', '-').replace('\\', '-').replace(':', '-')
 
 
 class PipelineBuild(Build):
@@ -52,8 +52,7 @@ class PipelineBuild(Build):
         if workerforbuilder.worker.worker_basedir:
             buildername = self.getProperty('virtual_builder_name')
             key = f'{buildername}-{workerforbuilder.worker.name}'
-            concurency = int(self.getProperty('pipeline_concurrency', 1))
-            idx = select_workdir_index(self, key, concurency)
+            idx = select_workdir_index(self, key)
             if idx:
                 suffix = f'@{idx}'
             else:

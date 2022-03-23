@@ -68,16 +68,39 @@ class BufWriter(base.FileWriterImpl):
         pass
 
 
-def wrapit(obj, attr):
-    orig = getattr(obj, attr)
+def wrapit(obj, attr=None):
     def decorator(fn):
+        lattr =  attr or fn.__name__
+        orig = getattr(obj, lattr)
+
         @functools.wraps(fn)
         def inner(*args, **kwargs):
             return fn(orig, *args, **kwargs)
-        setattr(obj, attr, inner)
+
+        setattr(obj, lattr, inner)
         return inner
     return decorator
 
 
 class adict(dict):
     __getattr__ = dict.__getitem__
+
+
+def get_last_successful_build_for_sourcestamp(master, builderid, ssid):
+    def thd(conn):
+        b = master.db.model.builds
+        bs = master.db.model.buildsets
+        br = master.db.model.buildrequests
+        bsss = master.db.model.buildset_sourcestamps
+
+        q = (b.select()
+             .select_from(b.join(br).join(bs).join(bsss))
+             .where(bsss.c.sourcestampid == ssid,
+                    b.c.builderid == builderid,
+                    bs.c.complete == 1,
+                    b.c.results == 0)
+             .order_by(b.c.number.desc())
+             .limit(1))
+
+        return conn.execute(q).fetchone()
+    return master.db.pool.do(thd)

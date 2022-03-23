@@ -85,7 +85,7 @@ EMBED_TEMPLATE = '''\
         color: #00b255;
     }
     .bb-pipe-junit-case span.status.error {
-        color: #0cc08e;
+        color: #cc008e;
     }
     .bb-pipe-junit-case span.status.fail {
         color: #ff2920;

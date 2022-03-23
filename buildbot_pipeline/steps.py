@@ -1,16 +1,10 @@
 import os.path
 import json
 import yaml
-import itertools
 import re
 from pathlib import Path
 
-from buildbot.plugins import util, worker
-from buildbot.schedulers.triggerable import Triggerable
-from buildbot.schedulers.basic import AnyBranchScheduler
-from buildbot.process import buildstep, logobserver, builder, results
-from buildbot.process.factory import BuildFactory
-from buildbot.config import BuilderConfig
+from buildbot.process import buildstep, logobserver, results, properties
 from buildbot.steps.transfer import MultipleFileUpload
 from buildbot.steps.trigger import Trigger
 from buildbot.steps.source import git
@@ -19,6 +13,22 @@ from twisted.internet import defer
 from twisted.python.failure import Failure
 
 from buildbot_pipeline import junit, utils, filters, file_store, build
+
+
+def process_interpolate(value):
+    if type(value) is str:
+        if value.startswith('!'):
+            return properties.Interpolate(value[1:])
+        elif value.startswith(r'\!'):
+            return value[2:]
+        else:
+            return value
+    elif type(value) is list:
+        return [process_interpolate(v) for v in value]
+    elif type(value) is dict:
+        return {k: process_interpolate(v) for k, v in value.items()}
+    else:
+        return value
 
 
 def gen_steps(step, data):
@@ -30,17 +40,20 @@ def gen_steps(step, data):
         data['haltOnFailure'] = True
 
     if 'shell' in data:
-        copy = data.copy()
-        copy['command'] = copy.pop('shell')
-        env = copy.setdefault('env', {})
-        env['BUILD_ID'] = util.Interpolate('%(prop:root_buildnumber:-%(prop:buildnumber)s)s')
-        env['WORKSPACE'] = util.Interpolate('%(prop:builddir)s')
-        return DynamicStep(**copy)
+        data['command'] = data.pop('shell')
+        step_env = data.get('env', {})
+        data['env'] = step.build.pipeline_env.copy()
+        data['env'].update(step_env)
+        data = process_interpolate(data)
+        data['env']['BUILD_ID'] = properties.Interpolate('%(prop:root_buildnumber:-%(prop:buildnumber)s)s')
+        data['env']['WORKSPACE'] = properties.Interpolate('%(prop:builddir)s')
+        return DynamicStep(**data)
     elif 'steps' in data:
         return [gen_steps(step, it) for it in data['steps']]
     elif 'parallel' in data:
         return Parallel(data['parallel'])
     elif 'git' in data:
+        data = process_interpolate(data)
         data.pop('git')
         data.update(_vcs_opts)
         return git.Git(**data)
@@ -48,18 +61,9 @@ def gen_steps(step, data):
     raise Exception(f'Unknown step {data}')
 
 
-@util.renderer
-def builder_names(props):
-    prefix = props.getProperty('pipeline_builder_prefix')
-    worker = props.getProperty('workername', '-some-')
-    name = build_counters[prefix].next_builder(worker)
-    return [name]
-
-
 class Parallel(Trigger):
-    waitForFinish = True
-
     def __init__(self, steps_info, inner=True, **kwargs):
+        kwargs.setdefault('waitForFinish', True)
         super().__init__('trig-prop-builder', **kwargs)
         self.steps_info = steps_info
         self.correct_names = [it['name'] for it in steps_info]
@@ -110,11 +114,37 @@ class Parallel(Trigger):
 
 
 class PropStep(buildstep.BuildStep):
-    hideStepIf = True
+    hideStepIf = staticmethod(utils.hide_if_success)
+    name = 'init'
 
+    @defer.inlineCallbacks
+    def checkAlreadyPassed(self):
+        ss = self.build.getSourceStamp()
+        if not ss:
+            return None
+
+        bid = yield self.build.getBuilderId()
+        build = yield utils.get_last_successful_build_for_sourcestamp(self.master, bid, ss.ssid)
+        if build:
+            self.addURL('Last successful build', f'#/builders/{build.builderid}/builds/{build.number}')
+            self.descriptionDone = ['Already passed']
+            self.build.results = results.SKIPPED
+            return True
+
+    @defer.inlineCallbacks
     def run(self):
-        self.build.addStepsAfterCurrentStep(utils.ensure_list(gen_steps(
-            self, json.loads(self.getProperty('steps_info', '{}')))))
+        steps_info = json.loads(self.getProperty('steps_info', '{}'))
+
+        if type(steps_info) is dict and steps_info.get('skip_passed'):
+            already_passed = yield self.checkAlreadyPassed()
+            if already_passed:
+                return results.SKIPPED
+
+        self.build.pipeline_env = {}
+        if type(steps_info) is dict:
+            self.build.pipeline_env = steps_info.get('env', {})
+
+        self.build.addStepsAfterCurrentStep(utils.ensure_list(gen_steps(self, steps_info)))
         return results.SUCCESS
 
 
@@ -136,7 +166,7 @@ class GatherBuilders(buildstep.BuildStep):
                 with open(it) as f:
                     step = yaml.safe_load(f)
             except Exception as e:
-                result = util.WARNINGS
+                result = results.WARNINGS
                 yield self.addCompleteLog(name, Failure(e).getTraceback())
             else:
                 repo = self.getProperty('repository')
@@ -146,9 +176,23 @@ class GatherBuilders(buildstep.BuildStep):
 
                 changes = list(self.build.allChanges())
                 if changes:
-                    start_build = it_repo_path in changes[0].files
-                    if not start_build and 'filters' in step:
-                        start_build = filters.make_filters(step['filters'])(changes[0])
+                    start_build = None
+                    if step.get('disabled'):
+                        start_build = False
+
+                    if start_build is None and it_repo_path in changes[0].files:
+                        start_build = True
+
+                    if start_build is None and 'filters' in step:
+                        try:
+                            flt = filters.make_filters(step['filters'])
+                        except Exception as e:
+                            result = results.WARNINGS
+                            yield self.addCompleteLog(name, str(e))
+                        else:
+                            changes[0].props = self.getProperties()
+                            if flt and flt(changes[0]):
+                                start_build = True
 
                     if start_build:
                         step_info.append(step)
@@ -160,7 +204,8 @@ class GatherBuilders(buildstep.BuildStep):
             return result
 
         self.descriptionDone = ['There are no suitable jobs']
-        return results.CANCELLED
+        self.build.results = results.SKIPPED
+        return results.SKIPPED
 
 
 class DistributeStep(buildstep.BuildStep):
@@ -199,17 +244,29 @@ class DynamicStep(buildstep.ShellMixin, buildstep.BuildStep):
             self.build.addStepsAfterCurrentStep(self.extract_steps(self.observer.getStdout()))
 
         if self.junit:
-            yield self.handleJUnit(self.junit)
+            for desc in utils.ensure_list(self.junit):
+                yield self.handleJUnit(desc)
 
         if self.upload:
-            yield self.handleUpload(self.upload)
+            for desc in utils.ensure_list(self.upload):
+                yield self.handleUpload(desc)
 
         return result
 
     @defer.inlineCallbacks
     def handleJUnit(self, desc):
+        if type(desc) is dict:
+            label = desc.get('label')
+            src = desc.get('src')
+        else:
+            label = None
+            src = desc
+
+        if not src:
+            return
+
         wd = utils.get_workdir(self)
-        rv = yield utils.silent_remote_command(self, 'glob', path=os.path.join(wd, desc))
+        rv = yield utils.silent_remote_command(self, 'glob', path=os.path.join(wd, src))
         for fname in rv.updates['files'][0]:
             writer = utils.BufWriter()
 
@@ -222,119 +279,36 @@ class DynamicStep(buildstep.ShellMixin, buildstep.BuildStep):
                 suites = junit.parse(writer.buf)
                 writer.buf.close()
                 h = junit.gen_html(suites, embed=True)
-                if suites:
-                    n = suites[0]['name']
-                else:
-                    n = 'tests'
-                self.addHTMLLog(n, h)
+                n = label or (suites and suites[0]['name'] or 'tests')
+                yield self.addHTMLLog(n, h)
 
     @defer.inlineCallbacks
     def handleUpload(self, desc):
         bname = build.builder_name_to_path(self.getProperty('virtual_builder_name') or self.getProperty('buildername'))
         bnum = self.getProperty('pipeline_buildnumber') or self.getProperty('buildnumber')
+
+        build_storage_path = os.path.realpath(os.path.join(file_store.app.path, bname, str(bnum)))
+        if desc.get('dest'):
+            dest = os.path.realpath(os.path.join(build_storage_path, desc['dest']))
+            if len(os.path.commonpath([dest, build_storage_path])) < len(build_storage_path):
+                raise Exception('Upload destination path should be relative to build storage path')
+        else:
+            dest = build_storage_path
+
         cmd = MultipleFileUpload(
-            workersrcs=[desc['files']],
+            workersrcs=utils.ensure_list(desc['src']),
             glob=True,
             url=f'file-store/{bname}/{bnum}/' + desc.get('link', ''),
-            urlText=desc.get('title'),
-            masterdest=os.path.join(file_store.app.path, bname, str(bnum)))
+            urlText=desc.get('label'),
+            masterdest=dest)
 
         cmd.setBuild(self.build)
         cmd.setWorker(self.worker)
         cmd.stepid = self.stepid
         cmd._running = True
         cmd.remote = self.remote
-        cmd.addLog = self.getLog
+        cmd.addLog = lambda name: defer.succeed(self.getLog(name))
         yield cmd.run()
 
 
-class BuilderCounter:
-    def __init__(self, prefix, amount):
-        self.prefix = prefix
-        self.amount = amount
-        self._counters = {}
-
-    def next_builder(self, key):
-        try:
-            c = self._counters[key]
-        except KeyError:
-            c = self._counters[key] = itertools.cycle(range(self.amount))
-        idx = next(c)
-        return f'{self.prefix}{idx}'
-
-
-build_counters = {}
 _vcs_opts = {'logEnviron': False, 'mode': 'full', 'method': 'fresh'}
-
-
-def init_pipeline(master_config, builders, inner_builders, change_filter=None, vcs_opts=None):
-    build_counters['~prop-builder'] = BuilderCounter('~prop-builder', builders)
-    build_counters['~prop-inner-builder'] = BuilderCounter('~prop-inner-builder', inner_builders)
-
-    if vcs_opts:
-        _vcs_opts.update(vcs_opts)
-
-    workers = [it.name for it in master_config['workers']]
-
-    factory = BuildFactory()
-    factory.buildClass = build.PipelineBuild
-    factory.addStep(PropStep())
-    # factory.workdir = util.Interpolate('%(prop:virtual_builder_name)s')
-    for i in range(builders):
-        master_config['builders'].append(
-            BuilderConfig(name=f"~prop-builder{i}",
-                          workernames=workers,
-                          factory=factory,
-                          locks=build.builder_locks))
-
-    factory = BuildFactory()
-    factory.buildClass = build.PipelineBuild
-    factory.addStep(PropStep())
-    # factory.workdir = util.Interpolate('%(prop:pipeline_workdir)s')
-    for i in range(inner_builders):
-        master_config['builders'].append(
-            BuilderConfig(name=f"~prop-inner-builder{i}",
-                          workernames=workers,
-                          factory=factory))
-
-    dist_workers = [worker.LocalWorker(f'distributor{i}') for i in range(3)]
-    master_config['workers'].extend(dist_workers)
-
-    factory = BuildFactory()
-    factory.addStep(DistributeStep(name='get builders'))
-    master_config['builders'].append(BuilderConfig(
-        name="~distributor", workernames=[it.name for it in dist_workers], factory=factory))
-
-    master_config['schedulers'].append(AnyBranchScheduler(
-        name="~distributor",
-        treeStableTimer=None,
-        change_filter=change_filter,
-        builderNames=["~distributor"]))
-
-    master_config['schedulers'].append(Triggerable('trig-prop-builder', builder_names))
-
-    file_store.init()
-
-
-@utils.wrapit(builder.Builder, 'getAvailableWorkers')
-def getAvailableWorkers(orig, self):
-    if not self.name.startswith('~prop-builder'):
-        return orig(self)
-
-    result = []
-    for name, bldr in self.botmaster.builders.items():
-        if name.startswith('~prop-builder'):
-            result.extend(orig(bldr))
-
-    return result
-
-
-@utils.wrapit(builder.Builder, 'maybeStartBuild')
-def maybeStartBuild(orig, self, workerforbuilder, breqs):
-    if not self.running:
-        return defer.succeed(False)
-
-    if not self.name.startswith('~prop-builder'):
-        return orig(self, workerforbuilder, breqs)
-
-    return orig(workerforbuilder.builder, workerforbuilder, breqs)
