@@ -177,27 +177,32 @@ class GatherBuilders(buildstep.BuildStep):
                 changes = list(self.build.allChanges())
                 if changes:
                     start_build = None
+                    skip_reason = 'unknown'
                     if step.get('disabled'):
                         start_build = False
+                        skip_reason = 'disabled'
 
                     if start_build is None and it_repo_path in changes[0].files:
                         start_build = True
 
-                    if start_build is None and 'filters' in step:
+                    if start_build is None and 'filter' in step:
                         try:
-                            flt = filters.make_filters(step['filters'])
+                            flt = filters.make_filters(step['filter'])
                         except Exception as e:
                             result = results.WARNINGS
+                            skip_reason = str(e)
                             yield self.addCompleteLog(name, str(e))
                         else:
                             changes[0].props = self.getProperties()
                             if flt and flt(changes[0]):
                                 start_build = True
+                            else:
+                                skip_reason = 'filter'
 
                     if start_build:
                         step_info.append(step)
                     else:
-                        yield self.addCompleteLog(name, 'skipped by filters')
+                        yield self.addCompleteLog(name, f'skipped by: {skip_reason}')
 
         if step_info:
             self.build.addStepsAfterCurrentStep([Parallel(step_info, inner=False, waitForFinish=False)])

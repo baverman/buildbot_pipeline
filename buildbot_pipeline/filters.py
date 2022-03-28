@@ -61,7 +61,7 @@ def make_filters(filters, is_or=False):
 
     result = []
     for desc in filters:
-        for name, values in desc:
+        for name, values in desc.items():
             if name in FILTERS:
                 fn, getter = FILTERS[name]
                 result.append(make_filter(values, fn, getter))
