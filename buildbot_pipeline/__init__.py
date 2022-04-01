@@ -35,7 +35,7 @@ def builder_names(props):
     return [name]
 
 
-def init_pipeline(master_config, builders, inner_builders, change_filter=None, vcs_opts=None):
+def init_pipeline(master_config, builders=10, inner_builders=30, vcs_opts=None):
     build_counters['~prop-builder'] = BuilderCounter('~prop-builder', builders)
     build_counters['~prop-inner-builder'] = BuilderCounter('~prop-inner-builder', inner_builders)
 
@@ -72,12 +72,6 @@ def init_pipeline(master_config, builders, inner_builders, change_filter=None, v
     factory.addStep(steps.DistributeStep(name='get builders'))
     master_config['builders'].append(BuilderConfig(
         name="~distributor", workernames=[it.name for it in dist_workers], factory=factory))
-
-    master_config['schedulers'].append(AnyBranchScheduler(
-        name="~distributor",
-        treeStableTimer=None,
-        change_filter=change_filter,
-        builderNames=["~distributor"]))
 
     master_config['schedulers'].append(Triggerable('trig-prop-builder', builder_names))
 
