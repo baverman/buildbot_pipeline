@@ -3,7 +3,6 @@ import itertools
 from buildbot.process import properties
 from buildbot.process.factory import BuildFactory
 from buildbot.config.builder import BuilderConfig
-from buildbot.schedulers.basic import AnyBranchScheduler
 from buildbot.schedulers.triggerable import Triggerable
 from buildbot.worker.local import LocalWorker
 
@@ -35,7 +34,8 @@ def builder_names(props):
     return [name]
 
 
-def init_pipeline(master_config, builders=10, inner_builders=30, vcs_opts=None):
+def init_pipeline(master_config, builders=10, inner_builders=30,
+                  stepsdir=steps.DEFAULT_STEPSDIR, vcs_opts=None):
     build_counters['~prop-builder'] = BuilderCounter('~prop-builder', builders)
     build_counters['~prop-inner-builder'] = BuilderCounter('~prop-inner-builder', inner_builders)
 
@@ -71,7 +71,10 @@ def init_pipeline(master_config, builders=10, inner_builders=30, vcs_opts=None):
     factory = BuildFactory()
     factory.addStep(steps.DistributeStep(name='get builders'))
     master_config['builders'].append(BuilderConfig(
-        name="~distributor", workernames=[it.name for it in dist_workers], factory=factory))
+        name="~distributor",
+        properties={'pipeline_stepsdir': stepsdir},
+        workernames=[it.name for it in dist_workers],
+        factory=factory))
 
     master_config['schedulers'].append(Triggerable('trig-prop-builder', builder_names))
 

@@ -14,6 +14,8 @@ from twisted.python.failure import Failure
 
 from buildbot_pipeline import junit, utils, filters, file_store, build
 
+DEFAULT_STEPSDIR = 'buildbot'
+
 
 def process_interpolate(value):
     if type(value) is str:
@@ -158,7 +160,7 @@ class GatherBuilders(buildstep.BuildStep):
         result = results.SUCCESS
         step_info = []
         repo_path = Path(workdir)
-        buildbot_path = repo_path / 'buildbot'
+        buildbot_path = repo_path / self.getProperty('pipeline_stepsdir', DEFAULT_STEPSDIR)
         for it in buildbot_path.glob('**/*.yaml'):
             it_repo_path = str(it.relative_to(repo_path))
             name, _, _ = str(it.relative_to(buildbot_path)).rpartition('.')
