@@ -57,7 +57,8 @@ testsuite_t = xml_schema(
     tests=item(xml_attr('tests'), src='.') | int,
     errors=item(xml_attr('errors'), src='.') | int,
     failures=item(xml_attr('failures'), src='.') | int,
-    skipped=opt(xml_attr('skipped'), src='.', default=0) | int,
+    skipped=opt(xml_attr('skipped'), src='.', default=0),
+    skips=opt(xml_attr('skips'), src='.', default=0),
     time=item(xml_attr('time'), src='.') | float,
 )
 
@@ -144,6 +145,7 @@ def get_template(embed):
 
 def gen_html(suites, embed=False):
     for s in suites:
+        s['skipped'] = s['skipped'] or s['skips']
         for c in s['testcases']:
             c['fail'] = c['error'] or c['failure']
 

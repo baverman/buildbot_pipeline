@@ -1,4 +1,5 @@
 import itertools
+from buildbot.plugins import util as _
 
 from buildbot.process import properties
 from buildbot.process.factory import BuildFactory
