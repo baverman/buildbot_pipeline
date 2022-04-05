@@ -20,6 +20,7 @@ class PublicApp:
         os.makedirs(path, exist_ok=True)
         self.path = path
         self.resource = static.File(path)
+        self.resource.contentTypes['.log'] = 'text/plain'
 
 
 app = PublicApp()

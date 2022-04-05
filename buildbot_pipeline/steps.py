@@ -55,9 +55,16 @@ def gen_steps(step, data):
         return [gen_steps(step, it) for it in data['steps']]
     elif 'parallel' in data:
         info = data['parallel']
-        if info is list:
+        if type(info) is list:
             info = {'steps': info}
-        return Parallel(list(matrix_steps(info)))
+
+        matrix = info.pop('matrix', None)
+        steps = info.pop('steps', [])
+        if matrix:
+            steps.insert(0, {'matrix': matrix})
+
+        info.pop('inner', None)
+        return Parallel(list(matrix_steps(steps)), **info)
     elif 'git' in data:
         data = process_interpolate(data)
         data.pop('git')
@@ -67,24 +74,25 @@ def gen_steps(step, data):
     raise Exception(f'Unknown step {data}')
 
 
-def matrix_steps(info):
-    if 'matrix' in info:
-        step_desc = info['matrix']
-        name = step_desc.pop('name', None)
-        all_params = step_desc.pop('params', [])
-        for params in utils.ensure_list(all_params):
-            params.pop('workername', None)
-            params = list(params.items())
-            params_keys = [it[0] for it in params]
-            params_values = [utils.ensure_list(it[1]) for it in params]
-            for pvals in itertools.product(*params_values):
-                props = dict(zip(params_keys, pvals))
-                s = step_desc.copy()
-                s['name'] = name.format(**props) if name else '-'.join(map(str, pvals))
-                s.setdefault('properties', {}).update(props)
-                yield s
-
-    yield from info.get('steps', [])
+def matrix_steps(steps):
+    for info in steps:
+        if 'matrix' in info:
+            step_desc = info['matrix']
+            name = step_desc.pop('name', None)
+            all_params = step_desc.pop('params', [])
+            for params in utils.ensure_list(all_params):
+                params.pop('workername', None)
+                params = list(params.items())
+                params_keys = [it[0] for it in params]
+                params_values = [utils.ensure_list(it[1]) for it in params]
+                for pvals in itertools.product(*params_values):
+                    props = dict(zip(params_keys, pvals))
+                    s = step_desc.copy()
+                    s['name'] = name.format(**props) if name else '-'.join(map(str, pvals))
+                    s.setdefault('properties', {}).update(props)
+                    yield s
+        else:
+            yield info
 
 
 class Parallel(Trigger):
