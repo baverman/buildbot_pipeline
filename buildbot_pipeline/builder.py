@@ -26,3 +26,11 @@ def maybeStartBuild(orig, self, workerforbuilder, breqs):
         return orig(self, workerforbuilder, breqs)
 
     return orig(workerforbuilder.builder, workerforbuilder, breqs)
+
+
+@utils.wrapit(builder.Builder)
+def canStartBuild(orig, self, workerforbuilder, buildrequest):
+    if builder.enforceChosenWorker(self, workerforbuilder, buildrequest):
+        return orig(self, workerforbuilder, buildrequest)
+
+    return defer.succeed(False)
