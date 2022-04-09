@@ -69,12 +69,9 @@ def make_filters(filters, is_or=False):
                 result.append(filter_op_not(make_filters(values)))
             elif name == 'or':
                 result.append(make_filters(values, True))
-            elif name.startswith('prop_'):
-                name = name[5:]
+            else:
                 getter = lambda value: value.props.getProperty(name)
                 result.append(make_filter(values, filter_match, getter))
-            else:
-                raise Exception(f'Unknown filter: {name}')
 
     if is_or:
         return filter_op_or(list(filter(None, result)))

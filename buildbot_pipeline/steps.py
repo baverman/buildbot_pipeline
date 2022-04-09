@@ -191,6 +191,12 @@ class GatherBuilders(buildstep.BuildStep):
     @defer.inlineCallbacks
     def run(self):
         workdir = os.path.join(self.getProperty('builddir'), self.workdir)
+
+        build_props = self.getProperty('pipeline_build_props', {})
+        forced_builders = build_props.get('builders')
+        common_props = build_props.get('common_props', {})
+        builder_props = build_props.get('builder_props', {})
+
         result = results.SUCCESS
         step_info = []
         repo_path = Path(workdir)
@@ -218,6 +224,9 @@ class GatherBuilders(buildstep.BuildStep):
                         start_build = False
                         skip_reason = 'disabled'
 
+                    if start_build is None and forced_builders and name in forced_builders:
+                        start_build = True
+
                     if start_build is None and it_repo_path in changes[0].files:
                         start_build = True
 
@@ -236,6 +245,10 @@ class GatherBuilders(buildstep.BuildStep):
                                 skip_reason = 'filter'
 
                     if start_build:
+                        props = step.get('properties', {}).copy()
+                        props.update(common_props)
+                        props.update(builder_props.get(name))
+                        step['properties'] = props
                         step_info.append(step)
                     else:
                         yield self.addCompleteLog(name, f'skipped by: {skip_reason}')
