@@ -22,8 +22,10 @@ def process_interpolate(value):
     if type(value) is str:
         if value.startswith('!'):
             return properties.Interpolate(value[1:])
-        elif value.startswith(r'\!'):
-            return value[2:]
+        elif value.startswith(r'@'):
+            return value[1:]
+        elif '%(' in value:
+            return properties.Interpolate(value)
         else:
             return value
     elif type(value) is list:
@@ -247,7 +249,7 @@ class GatherBuilders(buildstep.BuildStep):
                     if start_build:
                         props = step.get('properties', {}).copy()
                         props.update(common_props)
-                        props.update(builder_props.get(name))
+                        props.update(builder_props.get(name, {}))
                         step['properties'] = props
                         step_info.append(step)
                     else:
