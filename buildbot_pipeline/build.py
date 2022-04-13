@@ -21,6 +21,15 @@ def builder_locks(props):
     return [get_lock('pipeline-' + buildername, concurency).access('counting')]
 
 
+@renderer
+def inner_builder_locks(props):
+    lock_name = props.getProperty('lock')
+    if lock_name:
+        concurency = int(props.getProperty('lock_count', 1))
+        return [get_lock('lock-' + lock_name, concurency).access('counting')]
+    return []
+
+
 def select_workdir_index(build, key):
     i = 0
     while True:

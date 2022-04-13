@@ -90,8 +90,9 @@ def matrix_steps(steps):
                 for pvals in itertools.product(*params_values):
                     props = dict(zip(params_keys, pvals))
                     s = step_desc.copy()
+                    s['properties'] = s.get('properties', {}).copy()
+                    s['properties'].update(props)
                     s['name'] = name.format(**props) if name else '-'.join(map(str, pvals))
-                    s.setdefault('properties', {}).update(props)
                     yield s
         else:
             yield info

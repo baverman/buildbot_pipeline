@@ -64,7 +64,8 @@ def init_pipeline(master_config, builders=10, inner_builders=30,
         master_config['builders'].append(
             BuilderConfig(name=f"~prop-inner-builder{i}",
                           workernames=workers,
-                          factory=factory))
+                          factory=factory,
+                          locks=build.inner_builder_locks))
 
     dist_workers = [LocalWorker(f'distributor{i}') for i in range(3)]
     master_config['workers'].extend(dist_workers)
