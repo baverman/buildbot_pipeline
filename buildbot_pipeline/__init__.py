@@ -7,7 +7,8 @@ from buildbot.config.builder import BuilderConfig
 from buildbot.schedulers.triggerable import Triggerable
 from buildbot.worker.local import LocalWorker
 
-from . import steps, build, file_store, builder as _unused_important
+from . import steps, build, file_store
+from . import builder as _unused_important, monkey as _unused_important
 
 build_counters = {}
 
