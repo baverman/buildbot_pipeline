@@ -106,7 +106,7 @@ class Parallel(Trigger):
         self.correct_names = [it['name'] for it in steps_info]
         self.inner = inner
 
-    # @defer.inlineCallbacks
+    @defer.inlineCallbacks
     def getSchedulersAndProperties(self):
         if self.inner:
             builder_name = self.getProperty('parent_builder_name') or self.getProperty('virtual_builder_name') or self.getProperty('buildername')
@@ -124,7 +124,11 @@ class Parallel(Trigger):
                 'unimportant': False
             }
 
-            s['props_to_set'].update(it.get('properties', {}))
+            passthrough_propnames = self.getProperty('pipeline_passthrough_props') or []
+            props = {k: self.getProperty(k) for k in passthrough_propnames}
+            props.update(it.get('properties', {}))
+            props = yield self.render(process_interpolate(props))
+            s['props_to_set'].update(props)
 
             if self.inner:
                 s['props_to_set'].update(
@@ -251,6 +255,7 @@ class GatherBuilders(buildstep.BuildStep):
                         props = step.get('properties', {}).copy()
                         props.update(common_props)
                         props.update(builder_props.get(name, {}))
+                        props['pipeline_passthrough_props'] = list(props) + ['pipeline_passthrough_props']
                         step['properties'] = props
                         step_info.append(step)
                     else:

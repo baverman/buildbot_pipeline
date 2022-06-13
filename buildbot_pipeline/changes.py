@@ -52,11 +52,18 @@ class GerritChangeSource(gerritchangesource.GerritChangeSource):
         if self.projects and event.get('project') not in self.projects:
             return defer.succeed(None)
 
+        start = []
+        skip = []
+
         if event.get('type') == 'comment-added':
-            if not comment_trigger(properties, event):
-                return defer.succeed(None)
+            skip.append('comment')
+            if comment_trigger(properties, event):
+                start.append('comment')
 
         if self.ignore_wip and event.get('change', {}).get('wip'):
-            return defer.succeed(None)
+            skip.append('wip')
 
-        return super().addChangeFromEvent(properties, event)
+        if start or not skip:
+            return super().addChangeFromEvent(properties, event)
+
+        return defer.succeed(None)
