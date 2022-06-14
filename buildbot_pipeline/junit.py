@@ -106,7 +106,7 @@ EMBED_TEMPLATE = '''\
           <span class="status {{ case.status }}">{{ case.status.upper() }}</span>
           {{ case.classname }}.{{ case.name }} ({{ case.time }})
         </summary>
-        <p>{{ case.fail.message }}</p>
+        <pre>{{ case.fail.message }}</pre>
         <pre>{{ case.fail.content }}</pre>
         {% if case.stderr %}
         <pre>{{ case.stderr }}</pre>
