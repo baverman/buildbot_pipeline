@@ -5,8 +5,10 @@ from twisted.internet import defer
 
 import buildbot.db.builds as db_builds
 import buildbot.data.builds as data_builds
+import buildbot.data.connector as data_connector
+from buildbot.data import resultspec
 
-from buildbot_pipeline.utils import wrapit
+from buildbot_pipeline.utils import wrapit, nstr
 
 
 # original getBuildProperties fetches props one-by-one and very slow for pages
@@ -101,3 +103,36 @@ def get(orig, self, resultSpec, kwargs):
 
         buildscol.append(data)
     return buildscol
+
+
+MULTI_IDS_FIELDS = {
+    b'bnums': ('__bnum', str),
+    b'builderids': ('builderid', int),
+    b'buildids': ('buildid', int),
+    b'reqids': ('buildrequestid', int),
+}
+
+COLUMN_EXPR = {
+    '__bnum': lambda cols: cols['builds.builderid'].concat('-').concat(cols['builds.number'])
+}
+
+
+@wrapit(data_connector.DataConnector)
+def resultspec_from_jsonapi(orig, self, req_args, *args, **kwargs):
+    additional_filters = []
+    for arg, (field, cnv) in MULTI_IDS_FIELDS.items():
+        if arg in req_args:
+            additional_filters.append(
+                resultspec.Filter(field, 'in', list(map(cnv, nstr(req_args.pop(arg)[0]).split(',')))))
+
+    rspec = orig(self, req_args, *args, **kwargs)
+    rspec.filters.extend(additional_filters)
+    return rspec
+
+
+@wrapit(resultspec.ResultSpec)
+def findColumn(orig, self, query, field):
+    cols = {str(col): col for col in query.inner_columns}
+    if field in COLUMN_EXPR:
+        return COLUMN_EXPR[field](cols)
+    return cols[self.fieldMapping[field]]

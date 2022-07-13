@@ -16,6 +16,7 @@ from twisted.python.failure import Failure
 from buildbot_pipeline import junit, utils, filters, file_store, build
 
 DEFAULT_STEPSDIR = 'buildbot'
+HIDDEN = 'hidden'
 
 
 def process_interpolate(value):
@@ -133,6 +134,8 @@ class Parallel(Trigger):
             if self.inner:
                 s['props_to_set'].update(
                     virtual_builder_name=f"{builder_name}/{it['name']}",
+                    virtual_builder_title=it['name'],
+                    virtual_builder_tags=[HIDDEN],
                     workername=worker_name,
                     parent_builder_name=builder_name,
                     pipeline_builddir=builddir,
@@ -362,7 +365,7 @@ class DynamicStep(buildstep.ShellMixin, buildstep.BuildStep):
         cmd = MultipleFileUpload(
             workersrcs=utils.ensure_list(desc['src']),
             glob=True,
-            url=f'file-store/{bname}/{bnum}/' + desc.get('link', ''),
+            url=f'/file-store/{bname}/{bnum}/' + desc.get('link', ''),
             urlText=desc.get('label'),
             masterdest=dest)
 

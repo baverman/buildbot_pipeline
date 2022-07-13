@@ -55,6 +55,7 @@ def init_pipeline(master_config, builders=10, inner_builders=30,
             BuilderConfig(name=f"~prop-builder{i}",
                           workernames=workers,
                           factory=factory,
+                          tags=[steps.HIDDEN],
                           locks=build.builder_locks))
 
     factory = BuildFactory()
@@ -66,6 +67,7 @@ def init_pipeline(master_config, builders=10, inner_builders=30,
             BuilderConfig(name=f"~prop-inner-builder{i}",
                           workernames=workers,
                           factory=factory,
+                          tags=[steps.HIDDEN],
                           locks=build.inner_builder_locks))
 
     dist_workers = [LocalWorker(f'distributor{i}') for i in range(3)]

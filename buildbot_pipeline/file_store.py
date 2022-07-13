@@ -15,6 +15,19 @@ class PublicApp:
     def setMaster(self, master):
         self.master = master
 
+        # from twisted.internet import defer
+        #
+        # @defer.inlineCallbacks
+        # def async_do():
+        #     data = yield self.master.data.get(('builders',))
+        #     for it in sorted(data, key=lambda r: r['name']):
+        #         parts = it['name'].split('/')
+        #         if len(parts) > 2:
+        #             print(it['name'])
+        #             yield master.data.updates.updateBuilderInfo(it['builderid'], None, ['_virtual_', 'hidden'])
+        #
+        # async_do()
+
     def setConfiguration(self, config):
         path = config['path']
         os.makedirs(path, exist_ok=True)

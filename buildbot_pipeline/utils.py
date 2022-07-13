@@ -8,6 +8,32 @@ from buildbot.process.results import SUCCESS
 from buildbot.worker.protocols import base
 
 
+ntype = type('')
+btype = type(b'')
+utype = type(u'')
+
+
+def bstr(data, encoding='latin1'):
+    if type(data) is utype:
+        data = data.encode(encoding)
+    return data
+
+
+def ustr(data, encoding='latin1'):
+    if type(data) is btype:
+        data = data.decode(encoding)
+    return data
+
+
+def nstr(data, encoding='utf-8'):
+    if type(data) is ntype:
+        return data
+    elif type(data) is btype:
+        return data.decode(encoding)
+    else:
+        return data.encode(encoding)
+
+
 def ensure_list(data):
     if type(data) is not list:
         return [data]
