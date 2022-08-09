@@ -54,6 +54,8 @@ def gen_steps(step, data):
         data['env']['WORKSPACE'] = properties.Interpolate('%(prop:builddir)s')
         return DynamicStep(**data)
     elif 'steps' in data:
+        if 'env' in data:
+            [step['env'].update(data['env']) for step in data['steps'] if 'env' in step]
         return [gen_steps(step, it) for it in data['steps']]
     elif 'parallel' in data:
         info = data['parallel']
