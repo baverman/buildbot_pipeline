@@ -1,5 +1,6 @@
 import os
 
+import buildbot.data.properties as data_properties
 from buildbot.plugins.db import get_plugins, _PluginEntry
 from twisted.web import static
 
@@ -14,6 +15,7 @@ class PublicApp:
 
     def setMaster(self, master):
         self.master = master
+        self.master.data.updates.setBuildProperties = data_properties.Properties(master).setBuildProperties
 
         # from twisted.internet import defer
         #

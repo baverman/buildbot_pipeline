@@ -108,6 +108,14 @@ def wrapit(obj, attr=None):
     return decorator
 
 
+def add_method(obj, attr=None):
+    def decorator(fn):
+        lattr =  attr or fn.__name__
+        setattr(obj, lattr, fn)
+        return fn
+    return decorator
+
+
 class adict(dict):
     __getattr__ = dict.__getitem__
 

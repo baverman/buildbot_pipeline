@@ -138,9 +138,10 @@ HTML_TEMPLATE = f'''\
 
 @functools.lru_cache(None)
 def get_template(embed):
+    params = dict(autoescape=True)
     if embed:
-        return Template(EMBED_TEMPLATE)
-    return Template(HTML_TEMPLATE)
+        return Template(EMBED_TEMPLATE, **params)
+    return Template(HTML_TEMPLATE, **params)
 
 
 def gen_html(suites, embed=False):
