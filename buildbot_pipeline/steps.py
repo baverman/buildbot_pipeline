@@ -241,6 +241,9 @@ class GatherBuilders(buildstep.BuildStep):
                         start_build = True
 
                     if start_build is None and 'filter' in step:
+                        if 'status' not in step['filter']:
+                            step['filter']['status'] = 'new'
+
                         try:
                             flt = filters.make_filters(step['filter'])
                         except Exception as e:

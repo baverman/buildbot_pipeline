@@ -45,6 +45,15 @@ def make_filter(values, flt_fn, getter):
     return filter_op_or([flt_fn(v, getter) for v in ensure_list(values)])
 
 
+def update_type_getter(value):
+    status = value.props.getProperty('event.change.status')
+    if status == 'MERGED':
+        return 'merged'
+    elif status == 'TAGGED':
+        return 'tagged'
+    return 'new'
+
+
 FILTERS = {
     'branch': (filter_match, operator.attrgetter('branch')),
     'branches': (filter_match, operator.attrgetter('branch')),
@@ -52,6 +61,8 @@ FILTERS = {
     'comments': (filter_match, operator.attrgetter('comments')),
     'file': (filter_fnmatch, operator.attrgetter('files')),
     'files': (filter_fnmatch, operator.attrgetter('files')),
+    'status': (filter_match, update_type_getter),
+    'tag': (filter_match, lambda value: value.props.getProperty('event.change.tag')),
 }
 
 

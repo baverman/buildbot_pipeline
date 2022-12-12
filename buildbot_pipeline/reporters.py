@@ -2,9 +2,10 @@ import operator
 import itertools
 
 from twisted.internet import defer
-from buildbot.reporters import gerrit, utils
+from buildbot.reporters import gerrit, utils, mail
 from buildbot.data import resultspec
 from buildbot.process import results
+from buildbot.reporters.generators import build as generators_build
 
 
 class GerritStatusPush(gerrit.GerritStatusPush):
@@ -60,3 +61,22 @@ class GerritStatusPush(gerrit.GerritStatusPush):
 
         yield utils.getDetailsForBuilds(self.master, buildset, builds, want_properties=True)
         yield self.sendBuildSetSummary(buildset, builds)
+
+
+class BuildStatusGenerator(generators_build.BuildStatusGenerator):
+    def is_message_needed_by_props(self, build):
+        if 'email_notification_address' not in build['properties']:
+            return False
+        return super().is_message_needed_by_props(build)
+
+
+class MailNotifier(mail.MailNotifier):
+    @defer.inlineCallbacks
+    def getResponsibleUsersForBuild(self, master, buildid):
+        props = yield master.data.get(("builds", buildid, 'properties'))
+        result = list(filter(None, (it.strip() for it in props.get('email_notification_address', [''])[0].split(','))))
+        if 'owner' in result:
+            result.remove('owner')
+            extra = yield super().getResponsibleUsersForBuild(master, buildid)
+            result.extend(extra)
+        return result

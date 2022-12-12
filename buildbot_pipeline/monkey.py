@@ -174,7 +174,6 @@ def encodeRaw(orig, self, data, request):
 @data_base.updateMethod
 @defer.inlineCallbacks
 def setBuildProperties(orig, self, buildid, properties):
-    print('@@@@@@@@@@@@', 'daata setBuildProperties', flush=True)
     to_update = {}
     oldproperties = yield self.master.data.get(('builds', str(buildid), "properties"))
     properties = properties.getProperties()
@@ -192,7 +191,6 @@ def setBuildProperties(orig, self, buildid, properties):
 @add_method(db_builds.BuildsConnectorComponent)
 def setBuildProperties(self, bid, props):
     def thd(conn):
-        print('@@@@@@@@@@@@', 'db.builds setBuildProperties', flush=True)
         with conn.begin():
             bp_tbl = self.db.model.build_properties
             q = sa.select([bp_tbl.c.name, bp_tbl.c.value, bp_tbl.c.source], whereclause=bp_tbl.c.buildid == bid)

@@ -46,15 +46,34 @@ class GerritChangeSource(gerritchangesource.GerritChangeSource):
     def reconfigService(self, projects=None, ignore_wip=True, **kwargs):
         self.projects = projects
         self.ignore_wip = ignore_wip
+        kwargs['handled_events'] = ['patchset-created', 'comment-added', 'change-merged', 'ref-updated']
         return super().reconfigService(**kwargs)
 
+    def eventReceived_ref_updated(self, properties, event):
+        project = event.get('refUpdate').get('project')
+        if self.projects and project not in self.projects:
+            return None
+
+        tag_name = event.get('refUpdate').get('refName')
+        if tag_name.startswith('refs/tags/'):
+            tag_name = tag_name[len('refs/tags/'):]
+        else:
+            tag_name = None
+
+        rev = event.get('refUpdate').get('newRev')
+        if tag_name and set(rev) != {'0'}:
+            properties['event.change.status'] = 'TAGGED'
+            properties['event.change.tag'] = tag_name
+            return super().eventReceived_ref_updated(properties, event)
+        return None
+
     def addChangeFromEvent(self, properties, event):
-        if self.projects and event.get('project') not in self.projects:
+        project = event.get('project')
+        if self.projects and project not in self.projects:
             return defer.succeed(None)
 
         start = []
         skip = []
-
         if event.get('type') == 'comment-added':
             skip.append('comment')
             if comment_trigger(properties, event):
@@ -67,3 +86,13 @@ class GerritChangeSource(gerritchangesource.GerritChangeSource):
             return super().addChangeFromEvent(properties, event)
 
         return defer.succeed(None)
+
+'''
+{"submitter":{"name":"Anton Bobrov","email":"abobrov@cloudlinux.com","username":"abobrov"},"refUpdate":{"oldRev":"0000000000000000000000000000000000000000","newRev":"86e7ec2859f078c4763fe88152cd4b5a2c8ce9eb","refName":"refs/tags/bb-test-tag","project":"kernelcare"},"type":"ref-updated","eventCreatedOn":1670927471}
+
+
+{"submitter":{"name":"Anton Bobrov","email":"abobrov@cloudlinux.com","username":"abobrov"},"refUpdate":{"oldRev":"86e7ec2859f078c4763fe88152cd4b5a2c8ce9eb","newRev":"0000000000000000000000000000000000000000","refName":"refs/tags/bb-test-tag","project":"kernelcare"},"type":"ref-updated","eventCreatedOn":1670927745}
+
+
+{"submitter":{"name":"Anton Bobrov","email":"abobrov@cloudlinux.com","username":"abobrov"},"refUpdate":{"oldRev":"0000000000000000000000000000000000000000","newRev":"86e7ec2859f078c4763fe88152cd4b5a2c8ce9eb","refName":"refs/tags/bb-test-tag","project":"kernelcare"},"type":"ref-updated","eventCreatedOn":1670927792}
+'''
