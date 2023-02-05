@@ -6,7 +6,7 @@ import StepList from '../components/StepList.vue'
 import Properties from '../components/Properties.vue'
 import Changes from '../components/Changes.vue'
 
-import {getBuildByNumber, RESULTS, getRequests, getBuildset,
+import {getBuildByNumber, getRequests, getBuildset, result2int, resultTitle,
         getBuild, getBuilderName, getWorker} from '../data'
 import {fmtDuration, fmtAge, buildLink} from '../utils'
 
@@ -20,6 +20,7 @@ const router = useRouter()
 
 async function getData() {
     const b = await getBuildByNumber(config, props.builderid, props.number)
+
     const [breqs, w] = await Promise.all([
         getRequests(config, [b.buildrequestid]),
         getWorker(config, b.workerid)
@@ -50,7 +51,7 @@ onMounted(() => getData())
     <template v-if="build">
         <div class="vspacer">
             <div>
-                <span :class="`badge-text results_${build.results}`">{{ RESULTS[build.results].toUpperCase() }}</span>
+                <span :class="`badge-text results_${result2int(build)}`">{{ resultTitle(build).toUpperCase() }}</span>
                 in {{ fmtDuration(build) }}. Started {{ fmtAge(build.started_at) }} on {{ build.workername }}.
                 <template v-if="parent_build">
                     Parent: <router-link :to="buildLink(parent_build)">{{ parent_build.builder_name }}/{{ parent_build.number }}</router-link>

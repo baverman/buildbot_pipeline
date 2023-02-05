@@ -1,6 +1,6 @@
 <script setup>
 import { inject, ref, onMounted, computed } from 'vue'
-import {getBuilderNames, getBuildSteps, RESULTS} from '../data'
+import {getBuilderNames, getBuildSteps, result2int, resultTitle} from '../data'
 import {fmtDuration} from '../utils'
 import StepList from './StepList.vue'
 
@@ -36,7 +36,7 @@ onMounted(() => getData())
         </div>
         <div class="pure-u-3-5 right nested-build-status">
             {{ fmtDuration(build) }} {{ build.state_string }}
-            <span :class="`badge-text results_${build.results}`">{{ RESULTS[build.results].toUpperCase() }}</span>
+            <span :class="`badge-text results_${result2int(build)}`">{{ resultTitle(build).toUpperCase() }}</span>
         </div>
     </div>
     <StepList v-if="state" :build="build" :filter-steps="state" />

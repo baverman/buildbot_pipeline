@@ -2,6 +2,20 @@ const builderNameCache = new Map()
 
 export const RESULTS = ["success", "warnings", "failure", "skipped", "exception", "retry", "cancelled", "unknown"]
 
+export function result2int(obj) {
+    if (obj.results == null) {
+        return 99;
+    }
+    return obj.results;
+}
+
+export function resultTitle(obj) {
+    if (obj.results == null) {
+        return 'in progress';
+    }
+    return RESULTS[obj.results] || 'unknown';
+}
+
 export async function fetchData(config, url) {
     const resp = await fetch(config.backend + url)
     return await resp.json()

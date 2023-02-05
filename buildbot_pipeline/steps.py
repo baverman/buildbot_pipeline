@@ -145,6 +145,7 @@ class Parallel(Trigger):
             else:
                 s['props_to_set'].update(
                    virtual_builder_name=it['name'],
+                   virtual_builder_tags=[],
                    pipeline_builder_prefix='~prop-builder',
                    reporters='gerrit',
                    pipeline_concurrency=str(it.get('concurrency', 1)),
@@ -357,7 +358,7 @@ class DynamicStep(buildstep.ShellMixin, buildstep.BuildStep):
         bname = build.builder_name_to_path(self.getProperty('virtual_builder_name') or self.getProperty('buildername'))
         bnum = self.getProperty('pipeline_buildnumber') or self.getProperty('buildnumber')
 
-        build_storage_path = os.path.realpath(os.path.join(file_store.app.path, bname, str(bnum)))
+        build_storage_path = os.path.realpath(os.path.join(file_store.ep.path, bname, str(bnum)))
         if desc.get('dest'):
             dest = os.path.realpath(os.path.join(build_storage_path, desc['dest']))
             if len(os.path.commonpath([dest, build_storage_path])) < len(build_storage_path):
