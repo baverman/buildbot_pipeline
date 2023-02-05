@@ -6,25 +6,37 @@ import Build from './Build.vue'
 
 const config = inject('config')
 const props = defineProps(['step'])
-const step = props.step
 const logs = ref([])
 
+const data_builds = ref([])
+const data_requests = ref([])
 const request_urls = ref([])
 const builds = ref([])
 const other_urls = ref([])
 
 async function getData() {
-    logs.value = await getStepLogs(config, step.stepid)
-    const data = parseStepUrls(step.urls)
+    logs.value = await getStepLogs(config, props.step.stepid)
+    const data = parseStepUrls(props.step.urls)
+    data_builds.value = data.builds
+    data_requests.value = data.requests
     other_urls.value = data.other
+    await poll()
+}
 
-    await getBuilderNames(config, data.builds.map(it => it.builderid))
-    // builds.value = await getBuildsByNumber(config, data.builds.map(it => it.bnum))
-    builds.value = await getBuildsByRequest(config, data.requests.map(it => it.reqid))
+function hasUncompletedBuilds(builds) {
+    return builds.length && builds.filter(it => it.results == null).length
+}
+
+async function poll() {
+    await getBuilderNames(config, data_builds.value.map(it => it.builderid))
+    builds.value = await getBuildsByRequest(config, data_requests.value.map(it => it.reqid),
+                                            {'properties': ['virtual_builder_title']})
     const claimed_requests = new Map(builds.value.map(it => [it.buildrequestid, 1]))
-    request_urls.value = data.requests.filter(it => !claimed_requests.has(it.reqid))
+    request_urls.value = data_requests.value.filter(it => !claimed_requests.has(it.reqid))
 
-    const breqs = await getRequests(config, request_urls.value.map(it => it.reqid))
+    if (request_urls.value.length || hasUncompletedBuilds(builds.value)) {
+        setTimeout(poll, 10000)
+    }
 }
 
 onMounted(() => getData())

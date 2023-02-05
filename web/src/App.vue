@@ -67,6 +67,54 @@ body {
     border-color: #ACA0B3;
 }
 
+.results_99 {
+  color: #000;
+  background-color: #E7D100;
+  border-color: #ACA0B3;
+}
+
+.pulse {
+  -webkit-animation: pulse_animation 1s linear infinite;
+  animation: pulse_animation 1s linear infinite;
+  transform-origin: 70% 70%;
+  display: inline-block;
+}
+
+@keyframes pulse_animation {
+  0% {
+    transform: scale(0.9);
+    -webkit-transform: scale(0.9);
+  }
+  30% {
+    transform: scale(0.9);
+    -webkit-transform: scale(0.9);
+  }
+  40% {
+    transform: scale(1.08);
+    -webkit-transform: scale(1.08);
+  }
+  50% {
+    transform: scale(0.9);
+    -webkit-transform: scale(0.9);
+  }
+  60% {
+    transform: scale(0.9);
+    -webkit-transform: scale(0.9);
+  }
+  70% {
+    transform: scale(1.05);
+    -webkit-transform: scale(1.05);
+  }
+  80% {
+    transform: scale(0.9);
+    -webkit-transform: scale(0.9);
+  }
+  100% {
+    transform: scale(0.9);
+    -webkit-transform: scale(0.9);
+  }
+}
+
 .badge {
     border-radius: 0.8em;
     padding: 0.1em 0.5em;

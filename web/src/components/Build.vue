@@ -1,12 +1,11 @@
 <script setup>
 import { inject, ref, onMounted, computed } from 'vue'
-import {getBuilderNames, getBuildSteps, RESULTS} from '../data'
+import {getBuilderNames, getBuildSteps, resultClass, resultTitle} from '../data'
 import {fmtDuration} from '../utils'
 import StepList from './StepList.vue'
 
 const config = inject('config')
 const props = defineProps(['build'])
-const build = props.build
 
 const builder_name = ref(null)
 const state = ref(0)  // 0 - folded, 1 - problems, 2 - all
@@ -21,7 +20,11 @@ function nextState() {
 }
 
 async function getData() {
-    builder_name.value = (await getBuilderNames(config, [build.builderid])).get(build.builderid)
+    if (props.build.properties.virtual_builder_title) {
+        builder_name.value = props.build.properties.virtual_builder_title[0]
+    } else {
+        builder_name.value = (await getBuilderNames(config, [props.build.builderid])).get(props.build.builderid)
+    }
 }
 
 onMounted(() => getData())
@@ -32,14 +35,14 @@ onMounted(() => getData())
     <div class="pure-g nested-build-row">
         <div class="pure-u-2-5">
             <span class="pure-button nested-build-state" @click="nextState" v-html="state_labels[state]" />&nbsp;
-            <router-link :to="{name: 'build', params: {builderid: build.builderid, number: build.number}}">{{ builder_name }}/{{ build.number }}</router-link>
+            <router-link :to="{name: 'build', params: {builderid: props.build.builderid, number: props.build.number}}">{{ builder_name }}/{{ props.build.number }}</router-link>
         </div>
         <div class="pure-u-3-5 right nested-build-status">
-            {{ fmtDuration(build) }} {{ build.state_string }}
-            <span :class="`badge-text results_${build.results}`">{{ RESULTS[build.results].toUpperCase() }}</span>
+            {{ fmtDuration(props.build) }} {{ props.build.state_string }}
+            <span :class="`badge-text ${resultClass(props.build, true)}`">{{ resultTitle(props.build).toUpperCase() }}</span>
         </div>
     </div>
-    <StepList v-if="state" :build="build" :filter-steps="state" />
+    <StepList v-if="state" :build="props.build" :filter-steps="state" />
 </div>
 </template>
 

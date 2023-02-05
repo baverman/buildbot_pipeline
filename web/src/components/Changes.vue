@@ -1,6 +1,6 @@
 <script setup>
 import { inject, ref, onMounted, computed } from 'vue'
-import {getChangesBySSID, getChangeBuilds, getBuilders} from '../data'
+import {getChangesBySSID, getChangeBuilds, getBuilders, resultClass} from '../data'
 
 const config = inject('config')
 const props = defineProps(['build', 'buildset'])
@@ -53,14 +53,14 @@ onMounted(() => getData())
     <div class="pure-g">
         <div class="pure-u-1-2">
             <div class="vspacer" v-for="change in changes" :key="change.changeid">
-                <div><a :href="change.revlink">{{ change.author }}<br>{{ change.comments }}</a></div>
-                <table>
-                    <tr><td>Branch:</td><td>{{ change.branch }}</td></tr>
-                    <tr><td>Revision:</td><td>{{ change.revision }}</td></tr>
-                </table>
-                <div>Files:
+                <p style="line-height:130%">
+                    <a :href="change.revlink">{{ change.author }}</a>
+                    <pre>{{ change.comments }}</pre>
+                    Branch: {{ change.branch }}<br>
+                    Revision: {{ change.revision }}<br>
+                    Files:
                     <ul><li v-for="fname in change.files" :key="fname">{{ fname }}</li></ul>
-                </div>
+                </p>
             </div>
         </div>
         <div class="pure-u-1-2">
@@ -70,7 +70,7 @@ onMounted(() => getData())
                     <td style="line-height: 1.3">
                         <template v-for="build in (builds.get(builder.builderid) || [])">
                             <router-link
-                                    :class="['badge', `results_${build.results}`, {'changes-current': build.current}]"
+                                    :class="['badge', `${resultClass(build)}`, {'changes-current': build.current}]"
                                     :to="{name: 'build', params: {builderid: builder.builderid, number: build.number}}">
                                 {{ build.number }}
                             </router-link>&hairsp;

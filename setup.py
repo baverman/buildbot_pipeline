@@ -12,6 +12,11 @@ setup(
     long_description_content_type='text/x-rst',
     packages=['buildbot_pipeline'],
     install_requires=['covador'],
+    entry_points='''
+        [buildbot.www]
+        file-store = buildbot_pipeline.file_store:ep
+        bb-pipeline = buildbot_pipeline.web:ep
+    ''',
     python_requires='>=3.6',
     include_package_data=True,
     zip_safe=False,

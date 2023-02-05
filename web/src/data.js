@@ -2,6 +2,43 @@ const builderNameCache = new Map()
 
 export const RESULTS = ["success", "warnings", "failure", "skipped", "exception", "retry", "cancelled", "unknown"]
 
+export function urlQuery(data) {
+    var result = []
+    for(var k in data) {
+        const val = data[k]
+        if (val) {
+            if (typeof(val) == typeof([])) {
+                for(var it of val) {
+                    result.push(`${k}=${it}`)
+                }
+            } else {
+                result.push(`${k}=${val}`)
+            }
+        }
+    }
+    return result.join('&')
+}
+
+
+export function resultClass(obj, no_pulse) {
+    var num = obj.results;
+    var add = '';
+    if (num == null) {
+        num = 99;
+        if (!no_pulse) {
+            add = ' pulse';
+        }
+    }
+    return `results_${num}${add}`;
+}
+
+export function resultTitle(obj) {
+    if (obj.results == null) {
+        return 'in progress';
+    }
+    return RESULTS[obj.results] || 'unknown';
+}
+
 export async function fetchData(config, url) {
     const resp = await fetch(config.backend + url)
     return await resp.json()
@@ -12,6 +49,22 @@ export async function getBuildByNumber(config, builderid, number) {
     return (await fetchData(config, url)).builds[0] || null
 }
 
+export async function sendBuildAction(config, buildid, action) {
+    const url = `/api/v2/builds/${buildid}`
+    const payload = JSON.stringify({
+        'id': buildid,
+        'jsonrpc': '2.0',
+        'method': action,
+        'params': {},
+    })
+    const resp = await fetch(config.backend + url, {
+        'method': 'POST',
+        'body': payload,
+        'headers': {'Content-Type': 'application/json'},
+    })
+    return await resp.json()
+}
+
 export async function getBuildsByNumber(config, bnums) {
     if (!bnums.length) {
         return []
@@ -20,11 +73,12 @@ export async function getBuildsByNumber(config, bnums) {
     return (await fetchData(config, url)).builds || null
 }
 
-export async function getBuildsByRequest(config, reqids) {
+export async function getBuildsByRequest(config, reqids, settings) {
     if (!reqids.length) {
         return []
     }
-    const url = `/api/v2/builds?reqids=${reqids.join(',')}`
+    const props = settings && settings.properties
+    const url = '/api/v2/builds?' + urlQuery({reqids: reqids.join(','), property: props})
     return (await fetchData(config, url)).builds || null
 }
 

@@ -1,7 +1,7 @@
 <script setup>
 import { inject, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import {fetchData} from '../data'
+import {fetchData, resultClass} from '../data'
 import {fmtDuration, fmtAge} from '../utils'
 
 const config = inject('config')
@@ -42,7 +42,7 @@ onMounted(() => getData())
         <td>
             <router-link
                     :to="{name: 'build', params: {builderid: props.id, number: build.number}}"
-                    :class="`badge results_${build.results}`">
+                    :class="`badge ${resultClass(build)}`">
                 {{ build.number }}
             </router-link>
         </td>

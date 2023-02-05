@@ -17,7 +17,7 @@ export function fmtDuration(item) {
     if (item.complete) {
         dur = item.complete_at - item.started_at
     } else {
-        dur = new Date().getTime() / 1000 - item.started_at
+        dur = Math.round(new Date().getTime() / 1000 - item.started_at)
     }
     if (dur < 60) {
         return `${dur}s`
@@ -32,10 +32,10 @@ export function fmtDuration(item) {
 
 export function fmtAge(start) {
     const now = new Date().getTime() / 1000 | 0
-    const delta = now - start
+    const delta = Math.round(now - start)
     if (delta < 5) {
         return 'a moment ago'
-    } else if (delta < 300) {
+    } else if (delta < 120) {
         return `${delta}s ago`
     } else if (delta < 3600) {
         return `${delta / 60 | 0}m ago`

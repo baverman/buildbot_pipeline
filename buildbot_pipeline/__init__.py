@@ -7,7 +7,7 @@ from buildbot.config.builder import BuilderConfig
 from buildbot.schedulers.triggerable import Triggerable
 from buildbot.worker.local import LocalWorker
 
-from . import steps, build, file_store
+from . import steps, build, file_store as _unused_important
 from . import builder as _unused_important, monkey as _unused_important
 
 build_counters = {}
@@ -82,5 +82,3 @@ def init_pipeline(master_config, builders=10, inner_builders=30,
         factory=factory))
 
     master_config['schedulers'].append(Triggerable('trig-prop-builder', builder_names))
-
-    file_store.init()

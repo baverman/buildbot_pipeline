@@ -1,12 +1,12 @@
 <script setup>
 import { inject, ref, onMounted } from 'vue'
-import {getAllBuilders, getBuilderBuilds} from '../data'
+import {getAllBuilders, getBuilderBuilds, resultClass} from '../data'
 const config = inject('config')
 
 async function getBuilders() {
    const builders = await getAllBuilders(config)
    return (builders || []).filter(
-       it => (it.masterids.length || ~it.tags.indexOf('_virtual_')) && !~it.tags.indexOf('hidden'))
+       it => (!~it.tags.indexOf('hidden')))
 }
 
 async function getBuilds(builder_ids) {
@@ -41,7 +41,7 @@ onMounted(() => getData())
         <td style="line-height: 1.5">
             <template v-for="build in (builds.get(builder.builderid) || []).slice(0, 15)">
                 <router-link
-                        :class="`badge results_${build.results}`"
+                        :class="`badge ${resultClass(build)}`"
                         :to="{name: 'build', params: {builderid: builder.builderid, number: build.number}}">
                     {{ build.number }}
                 </router-link>&hairsp;

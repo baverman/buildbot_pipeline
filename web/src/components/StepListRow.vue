@@ -4,10 +4,10 @@ import ToggleArrow from './ToggleArrow.vue'
 import StepContent from './StepContent.vue'
 import Activated from './Activated.vue'
 import {fmtDuration} from '../utils'
+import {resultClass} from '../data'
 
 const config = inject('config')
 const props = defineProps(['step'])
-const step = props.step
 const details = ref(false)
 </script>
 
@@ -15,14 +15,14 @@ const details = ref(false)
     <div class="step-row vspacer">
         <div class="pure-g" @click.stop.prevent="details = !details">
             <div class="pure-u-1-3">
-                <span :class="`badge results_${step.results}`">{{ step.number}}</span>&hairsp;
+                <span :class="`badge ${resultClass(props.step)}`">{{ props.step.number}}</span>&hairsp;
                 <ToggleArrow :active="details" />
-                {{ step.name }}
+                {{ props.step.name }}
             </div>
-            <div class="pure-u-2-3 right">{{ fmtDuration(step) }} {{ step.state_string }}</div>
+            <div class="pure-u-2-3 right">{{ fmtDuration(props.step) }} {{ props.step.state_string }}</div>
         </div>
         <Activated :active="details">
-            <StepContent v-show="details" :step="step" />
+            <StepContent v-show="details" :step="props.step" />
         </Activated>
     </div>
 </template>

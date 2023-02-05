@@ -5,15 +5,25 @@ import StepListRow from './StepListRow.vue'
 
 const config = inject('config')
 const props = defineProps(['build', 'filter-steps'])
-const build = props.build
 const steps = ref([])
 
 function includeStep(step, fstate) {
     return !step.hidden && (fstate == 2 || (fstate == 1 && step.results > 0))
 }
 
+function allStepsDone(steps) {
+}
+
 async function getData() {
-    steps.value = await getBuildSteps(config, build.buildid)
+    steps.value = await getBuildSteps(config, props.build.buildid)
+    setTimeout(poll, 5000);
+}
+
+async function poll() {
+    if (props.build.results != null) {
+       return
+    }
+    await getData()
 }
 
 onMounted(() => getData())

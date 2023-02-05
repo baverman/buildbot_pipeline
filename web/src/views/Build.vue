@@ -6,8 +6,8 @@ import StepList from '../components/StepList.vue'
 import Properties from '../components/Properties.vue'
 import Changes from '../components/Changes.vue'
 
-import {getBuildByNumber, RESULTS, getRequests, getBuildset,
-        getBuild, getBuilderName, getWorker} from '../data'
+import {getBuildByNumber, getRequests, getBuildset, resultClass, resultTitle,
+        getBuild, getBuilderName, getWorker, sendBuildAction, getBuildsByRequest} from '../data'
 import {fmtDuration, fmtAge, buildLink} from '../utils'
 
 const config = inject('config')
@@ -20,6 +20,7 @@ const router = useRouter()
 
 async function getData() {
     const b = await getBuildByNumber(config, props.builderid, props.number)
+
     const [breqs, w] = await Promise.all([
         getRequests(config, [b.buildrequestid]),
         getWorker(config, b.workerid)
@@ -34,6 +35,18 @@ async function getData() {
     }
     build.value = b
     buildset.value = bs
+    setTimeout(poll, 5000);
+}
+
+async function poll() {
+    if (build.value && build.value.results != null) {
+        return
+    }
+    const old_worker = build.value.workername
+    const b = await getBuildByNumber(config, props.builderid, props.number)
+    b.workername = old_worker
+    build.value = b
+    setTimeout(poll, 5000)
 }
 
 function changeTab(newTab) {
@@ -43,6 +56,28 @@ function changeTab(newTab) {
     tab.value = newTab
 }
 
+async function rebuild() {
+    const result = await sendBuildAction(config, build.value.buildid, 'rebuild')
+    const breq = result.result.length && Object.values(result.result[1])[0]
+    if (breq) {
+        for(var i=0; i<10; i++) {
+            await new Promise(r => setTimeout(r, 300));
+            const data = await getBuildsByRequest(config, [breq])
+            if (data.length) {
+                const build = data[0];
+                router.push(buildLink(data[0]))
+                return
+            }
+        }
+    }
+    const lnk = {name: 'builder', params: {id: build.value.builderid}}
+    router.push(lnk)
+}
+
+async function stop() {
+    await sendBuildAction(config, build.value.buildid, 'stop')
+}
+
 onMounted(() => getData())
 </script>
 
@@ -50,11 +85,13 @@ onMounted(() => getData())
     <template v-if="build">
         <div class="vspacer">
             <div>
-                <span :class="`badge-text results_${build.results}`">{{ RESULTS[build.results].toUpperCase() }}</span>
+                <span :class="`badge-text ${resultClass(build, true)}`">{{ resultTitle(build).toUpperCase() }}</span>
                 in {{ fmtDuration(build) }}. Started {{ fmtAge(build.started_at) }} on {{ build.workername }}.
                 <template v-if="parent_build">
                     Parent: <router-link :to="buildLink(parent_build)">{{ parent_build.builder_name }}/{{ parent_build.number }}</router-link>
-                </template>
+                </template><!--
+                -->&nbsp;<button v-if="build.results != null" @click="rebuild">Rebuild</button>
+                <button v-else @click="stop">Stop</button>
             </div>
             <div>{{ build.state_string }}</div>
             <div class="pure-menu pure-menu-horizontal">
@@ -70,7 +107,6 @@ onMounted(() => getData())
                     </li>
                 </ul>
             </div>
-            <hr>
             <div>
             <KeepAlive>
                 <StepList v-if="tab == 'steps'" :build="build" :filter-steps="2" />
