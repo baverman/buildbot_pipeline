@@ -29,8 +29,8 @@ def filter_op_not(flt):
 
 def filter_match(val, getter):
     if type(val) is str and len(val) >= 2 and val[0] == '/' and val[-1] == '/':
-        r = re.compile(val)
-        return lambda value: bool(r.match(str(getter(value) or '')))
+        r = re.compile(val[1:-1])
+        return lambda value: bool(r.search(str(getter(value) or '')))
     else:
         return lambda value: getter(value) == val
 
