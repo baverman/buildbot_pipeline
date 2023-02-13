@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='buildbot_pipeline',
-    version='0.9.1',
+    version='0.10.1',
     url='https://github.com/baverman/buildbot_pipeline/',
     license='MIT',
     author='Anton Bobrov',
@@ -10,7 +10,10 @@ setup(
     description='Pipeline syntax for buildbot',
     long_description=open('README.rst', 'rb').read().decode('utf-8'),
     long_description_content_type='text/x-rst',
-    packages=['buildbot_pipeline'],
+    packages=['buildbot_pipeline', 'buildbot_pipeline.web'],
+    package_data={
+        '': ['web/dist/*', 'web/dist/assets/*']
+    },
     install_requires=['covador'],
     entry_points='''
         [buildbot.www]

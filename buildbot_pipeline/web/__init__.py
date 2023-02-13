@@ -9,7 +9,7 @@ class UI:
     def __init__(self):
         self.description = 'Buildbot pipeline UI'
         self.ui = False
-        self.static_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '../web/dist'))
+        self.static_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), 'dist'))
         self.resource = static.File(self.static_dir)
 
     def setMaster(self, master):
