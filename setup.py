@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='buildbot_pipeline',
-    version='0.9.1',
+    version='0.10',
     url='https://github.com/baverman/buildbot_pipeline/',
     license='MIT',
     author='Anton Bobrov',
