@@ -50,14 +50,17 @@ export async function getBuildByNumber(config, builderid, number) {
 }
 
 export async function sendBuildAction(config, buildid, action) {
-    const url = `/api/v2/builds/${buildid}`
+    return await sendRPC(`/builds/${buildid}`, action)
+}
+
+export async function sendRPC(config, url, action, params) {
     const payload = JSON.stringify({
-        'id': buildid,
+        'id': url,
         'jsonrpc': '2.0',
         'method': action,
-        'params': {},
+        'params': params || {},
     })
-    const resp = await fetch(config.backend + url, {
+    const resp = await fetch(config.backend + '/api/v2' + url, {
         'method': 'POST',
         'body': payload,
         'headers': {'Content-Type': 'application/json'},
@@ -212,4 +215,9 @@ export async function getLogContent(config, logid, offset, limit) {
     const qsstr = qs.length ? ('?' + qs.join('&')) : ''
     const url = `/api/v2/logs/${logid}/contents${qsstr}`
     return (await fetchData(config, url)).logchunks
+}
+
+export async function getWorkers(config) {
+    const data = await fetchData(config, `/api/v2/workers?order=name`)
+    return data.workers
 }

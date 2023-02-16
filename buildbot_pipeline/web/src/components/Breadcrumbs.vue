@@ -2,7 +2,7 @@
 import { inject, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import {getBuilderName} from '../data'
+import {getBuilderName, getWorker} from '../data'
 
 const config = inject('config')
 const router = useRouter()
@@ -17,6 +17,12 @@ router.beforeEach(async (to, from) => {
     } else if (to.name == 'builder') {
         const bname = await getBuilderName(config, parseInt(to.params.id))
         result.push([bname, {name: 'builder', params: {id: to.params.id}}])
+    } else if (to.name == 'workers' || to.name == 'index') {
+        result.push(['Workers', {name: 'workers'}])
+    } else if (to.name == 'worker') {
+        const w = await getWorker(config, parseInt(to.params.id))
+        result.push(['Workers', {name: 'workers'}])
+        result.push([w && w.name || 'unknown', {name: 'worker', params: {id: to.params.id}}])
     }
     bc.value = result
 })
