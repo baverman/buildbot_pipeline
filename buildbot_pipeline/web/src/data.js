@@ -50,7 +50,7 @@ export async function getBuildByNumber(config, builderid, number) {
 }
 
 export async function sendBuildAction(config, buildid, action) {
-    return await sendRPC(`/builds/${buildid}`, action)
+    return await sendRPC(config, `/builds/${buildid}`, action)
 }
 
 export async function sendRPC(config, url, action, params) {

@@ -4,11 +4,10 @@ import {getBuildProperties} from '../data'
 
 const config = inject('config')
 const props = defineProps(['build'])
-const build = props.build
 const properties = ref({})
 
 async function getData() {
-    properties.value = await getBuildProperties(config, build.buildid)
+    properties.value = await getBuildProperties(config, props.build.buildid)
 }
 
 function copy(event) {

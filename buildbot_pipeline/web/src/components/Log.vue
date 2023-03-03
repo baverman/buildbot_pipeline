@@ -6,7 +6,6 @@ import LogContent from './LogContent.vue'
 
 const config = inject('config')
 const props = defineProps(['log'])
-const log = props.log
 const details = ref(false)
 </script>
 
@@ -15,20 +14,20 @@ const details = ref(false)
         <div :class="{log: 1, 'w-100': 1, 'log-active': details, 'pure-g': 1}"
                 @click="details = !details">
             <div class="pure-u-4-5">
-                <ToggleArrow :active="details" />&nbsp;{{ log.name }}
+                <ToggleArrow :active="details" />&nbsp;{{ props.log.name }}
             </div>
             <div class="pure-u-1-5 right">
-                <a @click.stop="" :href="config.backend + `/api/v2/logs/${log.logid}/raw?_download=0`" target="_blank">view</a>
-                <template v-if="log.type != 'h'">
+                <a @click.stop="" :href="config.backend + `/api/v2/logs/${props.log.logid}/raw?_download=0`" target="_blank">view</a>
+                <template v-if="props.log.type != 'h'">
                     &nbsp;
-                    <a @click.stop="" :href="config.backend + `/api/v2/logs/${log.logid}/raw`" class="pure-button log-button-small">
+                    <a @click.stop="" :href="config.backend + `/api/v2/logs/${props.log.logid}/raw`" class="pure-button log-button-small">
                         <i class="fa fa-download" aria-hidden="true"></i>&nbsp;download
                     </a>
                 </template>
             </div>
         </div>
         <activated :active="details">
-            <log-content v-show="details" :log="log" />
+            <log-content v-show="details" :log="props.log" />
         </activated>
     </div>
 </template>

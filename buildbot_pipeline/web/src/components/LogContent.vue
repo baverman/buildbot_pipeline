@@ -4,11 +4,11 @@ import {getLogContent} from '../data'
 
 const config = inject('config')
 const props = defineProps(['log'])
-const log = props.log
 const content = ref([])
 const el = ref(null)
 
 async function getData() {
+    const log = props.log
     if (log.type == 'h') {
         const chunks = await getLogContent(config, log.logid)
         const result = chunks.map(it => it.content)
@@ -40,7 +40,7 @@ onMounted(() => getData())
 </script>
 
 <template>
-    <div class="log-content" v-if="log.type == 'h'" v-html="content" />
+    <div class="log-content" v-if="props.log.type == 'h'" v-html="content" />
     <pre v-else class="log-content" ref="el"><template v-for="line in content"><span :class="`line-${line[0]}`">{{ line[1] }}</span></template></pre>
 </template>
 
