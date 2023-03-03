@@ -43,7 +43,7 @@ class GerritStatusPush(gerrit.GerritStatusPush):
         if not buildsets or not all(it['complete'] for it in buildsets):
             return
 
-        bs_ids = [it['bsid'] for it in buildsets]
+        bs_ids = [it['bsid'] for it in buildsets][:50]
         breqs = yield self.master.data.get(
             ('buildrequests',),
             filters=[resultspec.Filter('buildsetid', 'in', bs_ids)])
