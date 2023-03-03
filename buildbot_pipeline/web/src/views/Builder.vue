@@ -48,8 +48,8 @@ onMounted(() => getData())
         </td>
         <td class="nowrap">{{ fmtAge(build.started_at) }}</td>
         <td>{{ fmtDuration(build) }}</td>
-        <td>{{ (build.properties.owners[0] || []).join(', ') }}</td>
-        <td>{{ build.properties.workername[0] }}</td>
+        <td>{{ (build.properties.owners?.[0] || []).join(', ') }}</td>
+        <td>{{ build.properties.workername?.[0] }}</td>
         <td>{{ build.state_string }}</td>
     </tr>
 </tbody>
