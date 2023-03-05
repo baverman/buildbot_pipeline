@@ -194,7 +194,7 @@ def setBuildProperties(self, bid, props):
         with conn.begin():
             bp_tbl = self.db.model.build_properties
             q = sa.select([bp_tbl.c.name, bp_tbl.c.value, bp_tbl.c.source], whereclause=bp_tbl.c.buildid == bid)
-            existing_props = {it.name: it.value for it in conn.execute(q).fetchall()}
+            existing_props = {it.name: it for it in conn.execute(q).fetchall()}
             for name, (value, source) in props.items():
                 value_js = json.dumps(value)
                 if name in existing_props:

@@ -107,6 +107,14 @@ class Parallel(Trigger):
         self.correct_names = [it['name'] for it in steps_info]
         self.inner = inner
 
+    def getAllGotRevisions(self):
+        # annotated tags can skew revision so we need to get original revision
+        # instead of got_revision property
+        revisions = self.getProperty('revision', {})
+        if not isinstance(revisions, dict):
+            revisions = {'': revisions}
+        return revisions
+
     @defer.inlineCallbacks
     def getSchedulersAndProperties(self):
         if self.inner:

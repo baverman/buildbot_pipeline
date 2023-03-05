@@ -61,7 +61,7 @@ class GerritChangeSource(gerritchangesource.GerritChangeSource):
             tag_name = None
 
         rev = event.get('refUpdate').get('newRev')
-        if tag_name and set(rev) != {'0'}:
+        if tag_name and rev and set(rev) != {'0'}:
             properties['event.change.status'] = 'TAGGED'
             properties['event.change.tag'] = tag_name
             return super().eventReceived_ref_updated(properties, event)
@@ -86,13 +86,3 @@ class GerritChangeSource(gerritchangesource.GerritChangeSource):
             return super().addChangeFromEvent(properties, event)
 
         return defer.succeed(None)
-
-'''
-{"submitter":{"name":"Anton Bobrov","email":"abobrov@cloudlinux.com","username":"abobrov"},"refUpdate":{"oldRev":"0000000000000000000000000000000000000000","newRev":"86e7ec2859f078c4763fe88152cd4b5a2c8ce9eb","refName":"refs/tags/bb-test-tag","project":"kernelcare"},"type":"ref-updated","eventCreatedOn":1670927471}
-
-
-{"submitter":{"name":"Anton Bobrov","email":"abobrov@cloudlinux.com","username":"abobrov"},"refUpdate":{"oldRev":"86e7ec2859f078c4763fe88152cd4b5a2c8ce9eb","newRev":"0000000000000000000000000000000000000000","refName":"refs/tags/bb-test-tag","project":"kernelcare"},"type":"ref-updated","eventCreatedOn":1670927745}
-
-
-{"submitter":{"name":"Anton Bobrov","email":"abobrov@cloudlinux.com","username":"abobrov"},"refUpdate":{"oldRev":"0000000000000000000000000000000000000000","newRev":"86e7ec2859f078c4763fe88152cd4b5a2c8ce9eb","refName":"refs/tags/bb-test-tag","project":"kernelcare"},"type":"ref-updated","eventCreatedOn":1670927792}
-'''
