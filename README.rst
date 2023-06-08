@@ -56,3 +56,23 @@ Environment variables
 * `WORKSPACE`: path to a shared storage for a buid job. Can be used for caches,
   node_modules, virtual environments and so on.
 * `BUILD_STATUS`: status of a current build so far. `Codes <https://docs.buildbot.net/latest/developer/results.html>`_.
+
+STDOUT markup
+-------------
+
+Buildbot pipeline supports special stdout markup to enrich builds with custom
+information.
+
+* `__PIPELINE_LINK__ name url`: adds a user provided link to a current step.
+* `__PIPELINE_PROP__ name value`: adds a user provided property to a current build.
+  You can access property value in following steps.
+
+For example:
+
+.. code-block:: yaml
+
+   steps:
+     - name: test
+       shell: |
+           build_id=$(build-package.sh)
+           echo __PIPELINE_LINK__ artifacts http://build.corp.com/artifacts/$build_id

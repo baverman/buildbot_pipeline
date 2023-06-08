@@ -2,6 +2,7 @@ import os.path
 import itertools
 import json
 import yaml
+import shlex
 import re
 from pathlib import Path
 
@@ -321,13 +322,33 @@ class DynamicStep(buildstep.ShellMixin, buildstep.BuildStep):
         data = yaml.safe_load(m[1])
         return utils.ensure_list(gen_steps(self, data))
 
+    def extract_props(self, stdout):
+        r = '(?m)__PIPELINE_' + r'PROP__\s+(.+)$'
+        for data in re.findall(r, stdout):
+            name, value = data.split(None, 1)
+            yield name, value
+
+    def extract_links(self, stdout):
+        r = '(?m)__PIPELINE_' + r'LINK__\s+(.+)$'
+        for data in re.findall(r, stdout):
+            parts = shlex.split(data)
+            if len(parts) >= 2:
+                yield parts[:2]
+
     @defer.inlineCallbacks
     def run(self):
         cmd = yield self.makeRemoteShellCommand()
         yield self.runCommand(cmd)
         result = cmd.results()
+        stdout = self.observer.getStdout()
         if result == results.SUCCESS:
-            self.build.addStepsAfterCurrentStep(self.extract_steps(self.observer.getStdout()))
+            self.build.addStepsAfterCurrentStep(self.extract_steps(stdout))
+
+        for name, url in self.extract_links(stdout):
+            yield self.addURL(name, url)
+
+        for name, value in self.extract_props(stdout):
+            yield self.setProperty(name, value, 'Step')
 
         if self.junit:
             for desc in utils.ensure_list(self.junit):
