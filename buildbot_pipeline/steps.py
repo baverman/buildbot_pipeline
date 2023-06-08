@@ -220,6 +220,7 @@ class GatherBuilders(buildstep.BuildStep):
         step_info = []
         repo_path = Path(workdir)
         buildbot_path = repo_path / self.getProperty('pipeline_stepsdir', DEFAULT_STEPSDIR)
+        changes = list(self.build.allChanges())
         for it in buildbot_path.glob('**/*.yaml'):
             it_repo_path = str(it.relative_to(repo_path))
             name, _, _ = str(it.relative_to(buildbot_path)).rpartition('.')
@@ -235,17 +236,16 @@ class GatherBuilders(buildstep.BuildStep):
                 if 'steps' in step:
                     step['steps'].insert(0, {'git': True, 'repourl': repo})
 
-                changes = list(self.build.allChanges())
+                skip_reason = 'unknown'
+                start_build = None
+                if forced_builders and name in forced_builders:
+                    start_build = True
+
+                if step.get('disabled'):
+                    start_build = False
+                    skip_reason = 'disabled'
+
                 if changes:
-                    start_build = None
-                    skip_reason = 'unknown'
-                    if step.get('disabled'):
-                        start_build = False
-                        skip_reason = 'disabled'
-
-                    if start_build is None and forced_builders and name in forced_builders:
-                        start_build = True
-
                     if start_build is None and it_repo_path in changes[0].files:
                         start_build = True
 
@@ -266,15 +266,15 @@ class GatherBuilders(buildstep.BuildStep):
                             else:
                                 skip_reason = 'filter'
 
-                    if start_build:
-                        props = step.get('properties', {}).copy()
-                        props.update(common_props)
-                        props.update(builder_props.get(name, {}))
-                        props['pipeline_passthrough_props'] = list(props) + ['pipeline_passthrough_props']
-                        step['properties'] = props
-                        step_info.append(step)
-                    else:
-                        yield self.addCompleteLog(name, f'skipped by: {skip_reason}')
+                if start_build:
+                    props = step.get('properties', {}).copy()
+                    props.update(common_props)
+                    props.update(builder_props.get(name, {}))
+                    props['pipeline_passthrough_props'] = list(props) + ['pipeline_passthrough_props']
+                    step['properties'] = props
+                    step_info.append(step)
+                else:
+                    yield self.addCompleteLog(name, f'skipped by: {skip_reason}')
 
         if step_info:
             self.build.addStepsAfterCurrentStep([Parallel(step_info, inner=False, waitForFinish=False)])
