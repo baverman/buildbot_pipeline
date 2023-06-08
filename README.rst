@@ -47,3 +47,12 @@ Example:
          label: coverage report
          src: htmlcov
          link: htmlcov/
+
+
+Environment variables
+---------------------
+
+* `BUILD_ID`: id of a root job, it's uniq accross a build job
+* `WORKSPACE`: path to a shared storage for a buid job. Can be used for caches,
+  node_modules, virtual environments and so on.
+* `BUILD_STATUS`: status of a current build so far. `Codes <https://docs.buildbot.net/latest/developer/results.html>`_.

@@ -53,6 +53,7 @@ def gen_steps(step, data):
         data = process_interpolate(data)
         data['env']['BUILD_ID'] = properties.Interpolate('%(prop:pipeline_buildnumber:-%(prop:buildnumber)s)s')
         data['env']['WORKSPACE'] = properties.Interpolate('%(prop:builddir)s')
+        data['env']['BUILD_STATUS'] = build_results
         return DynamicStep(**data)
     elif 'steps' in data:
         return [gen_steps(step, it) for it in data['steps']]
@@ -97,6 +98,14 @@ def matrix_steps(steps):
                     yield s
         else:
             yield info
+
+
+@properties.renderer
+def build_results(props):
+    build = props.getBuild()
+    if build.results is not None:
+        return str(build.results)
+    return ''
 
 
 class Parallel(Trigger):
