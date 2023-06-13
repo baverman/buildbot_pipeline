@@ -84,6 +84,7 @@ def matrix_steps(steps):
         if 'matrix' in info:
             step_desc = info['matrix']
             name = step_desc.pop('name', None)
+            skip_passed = step_desc.pop('skip_passed', None)
             all_params = step_desc.pop('params', [])
             for params in utils.ensure_list(all_params):
                 params.pop('workername', None)
@@ -95,6 +96,8 @@ def matrix_steps(steps):
                     s = step_desc.copy()
                     s['properties'] = s.get('properties', {}).copy()
                     s['properties'].update(props)
+                    if skip_passed is not None:
+                        s['properties']['skip_passed'] = skip_passed
                     s['name'] = name.format(**props) if name else '-'.join(map(str, pvals))
                     yield s
         else:
@@ -200,11 +203,13 @@ class PropStep(buildstep.BuildStep):
     def run(self):
         steps_info = json.loads(self.getProperty('steps_info', '{}'))
 
-        if type(steps_info) is dict and steps_info.get('skip_passed'):
+        skip_passed = self.getProperty('skip_passed')
+        if skip_passed and skip_passed not in ('0', 'false', 'no', 'False'):
             already_passed = yield self.checkAlreadyPassed()
             if already_passed:
                 return results.SKIPPED
 
+        # TODO: move env handling to gen_steps
         self.build.pipeline_env = {}
         if type(steps_info) is dict:
             self.build.pipeline_env = steps_info.get('env', {})
