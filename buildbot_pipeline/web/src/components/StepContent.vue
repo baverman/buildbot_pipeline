@@ -51,6 +51,6 @@ onMounted(() => getData())
             <Log v-for="log in logs" :key="log.logid" :log="log" />
         </div>
         <div v-for="url in request_urls">{{ url }}</div>
-        <Build v-for="it in builds" :key="it.buildid" :build="it" />
+        <Build v-for="it in builds" :key="it.bnum" :build="it" />
     </div>
 </template>

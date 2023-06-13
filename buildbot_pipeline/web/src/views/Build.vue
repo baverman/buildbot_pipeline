@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import StepList from '../components/StepList.vue'
 import Properties from '../components/Properties.vue'
 import Changes from '../components/Changes.vue'
+import RelBuilds from '../components/RelBuilds.vue'
 
 import {getBuildByNumber, getRequests, getBuildset, resultClass, resultTitle,
         getBuild, getBuilderName, getWorker, sendBuildAction, getBuildsByRequest} from '../data'
@@ -105,6 +106,9 @@ onMounted(() => getData())
                     <li :class="{'pure-menu-item': true, 'pure-menu-selected': tab == 'changes'}">
                         <a @click="changeTab('changes')" class="pure-menu-link">Changes</a>
                     </li>
+                    <li :class="{'pure-menu-item': true, 'pure-menu-selected': tab == 'relbuilds'}">
+                        <a @click="changeTab('relbuilds')" class="pure-menu-link">Related builds</a>
+                    </li>
                 </ul>
             </div>
             <div>
@@ -112,6 +116,7 @@ onMounted(() => getData())
                 <StepList v-if="tab == 'steps'" :build="build" :filter-steps="2" />
                 <Properties v-else-if="tab == 'props'" :build="build" />
                 <Changes v-else-if="tab == 'changes'" :build="build" :buildset="buildset" />
+                <RelBuilds v-else-if="tab == 'relbuilds'" :build="build" :buildset="buildset" />
             </KeepAlive>
             </div>
         </div>

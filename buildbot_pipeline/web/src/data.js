@@ -171,22 +171,26 @@ export async function getStepLogs(config, id) {
     return (await fetchData(config, `/api/v2/steps/${id}/logs`)).logs
 }
 
-const BUILDREQUEST_RE = /#buildrequests\/(\d+)$/
-const BUILDNUM_RE = /#builders\/(\d+)\/builds\/(\d+)$/
+const BUILDREQUEST_RE = /#\/?buildrequests\/(\d+)$/
+const BUILDNUM_RE = /#\/?builders\/(\d+)\/builds\/(\d+)$/
 
 export function parseStepUrls(urls) {
     const requests = []
     const builds = []
     const other = []
     for (var it of urls) {
-        if (it.url.includes('#buildrequests/')) {
+        if (it.name == 'Last successful build') {
+            other.push(it)
+            continue
+        }
+        if (it.url.includes('buildrequests/')) {
             const m = it.url.match(BUILDREQUEST_RE)
             if (m !== null) {
                 it.reqid = parseInt(m[1])
                 requests.push(it)
                 continue
             }
-        } else if (it.url.includes('#builders/')) {
+        } else if (it.url.includes('builders/')) {
             const m = it.url.match(BUILDNUM_RE)
             if (m !== null) {
                 it.bnum = m[1] + '-' + m[2]
