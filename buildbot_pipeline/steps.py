@@ -231,6 +231,9 @@ class GatherBuilders(buildstep.BuildStep):
         common_props = build_props.get('common_props', {})
         builder_props = build_props.get('builder_props', {})
 
+        if not self.getProperty('revision') and self.getProperty('got_revision'):
+            self.setProperty('revision', self.getProperty('got_revision'), 'Build')
+
         result = results.SUCCESS
         step_info = []
         repo_path = Path(workdir)
