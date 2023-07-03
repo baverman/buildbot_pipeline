@@ -46,6 +46,11 @@ def gen_steps(step, data):
         data['shell'] = data.pop('shell-fail')
         data['haltOnFailure'] = True
 
+    if 'decodeRC' in data:
+        # keys are implicitly converted to str during json dumping
+        # fix type back to int
+        data['decodeRC'] = {int(i): k for i, k in data['decodeRC'].items()}
+
     if 'shell' in data:
         data['command'] = data.pop('shell')
         step_env = data.get('env', {})
