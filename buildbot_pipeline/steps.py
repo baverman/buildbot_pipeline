@@ -48,6 +48,7 @@ def gen_steps(step, data):
 
     if 'shell' in data:
         data['command'] = data.pop('shell')
+        data['doStepIf'] = do_step_if(data)
         step_env = data.get('env', {})
         data['env'] = step.build.pipeline_env.copy()
         data['env'].update(step_env)
@@ -68,6 +69,7 @@ def gen_steps(step, data):
         if matrix:
             steps.insert(0, {'matrix': matrix})
 
+        info['doStepIf'] = do_step_if(info)
         info.pop('inner', None)
         return Parallel(list(matrix_steps(steps)), **info)
     elif 'git' in data:
@@ -146,7 +148,7 @@ class Parallel(Trigger):
                 'unimportant': False
             }
 
-            passthrough_propnames = self.getProperty('pipeline_passthrough_props') or []
+            passthrough_propnames = (self.getProperty('pipeline_passthrough_props') or []) + ['pipeline_passthrough_props']
             props = {k: self.getProperty(k) for k in passthrough_propnames}
             props.update(it.get('properties', {}))
             props = yield self.render(process_interpolate(props))
@@ -203,8 +205,7 @@ class PropStep(buildstep.BuildStep):
     def run(self):
         steps_info = json.loads(self.getProperty('steps_info', '{}'))
 
-        skip_passed = self.getProperty('skip_passed')
-        if skip_passed and skip_passed not in ('0', 'false', 'no', 'False'):
+        if utils.to_bool(self.getProperty('skip_passed')):
             already_passed = yield self.checkAlreadyPassed()
             if already_passed:
                 return results.SKIPPED
@@ -288,7 +289,8 @@ class GatherBuilders(buildstep.BuildStep):
                     props = step.get('properties', {}).copy()
                     props.update(common_props)
                     props.update(builder_props.get(name, {}))
-                    props['pipeline_passthrough_props'] = list(props) + ['pipeline_passthrough_props']
+                    if props:
+                        props['pipeline_passthrough_props'] = list(props)
                     step['properties'] = props
                     step_info.append(step)
                 else:
@@ -301,6 +303,27 @@ class GatherBuilders(buildstep.BuildStep):
         self.descriptionDone = ['There are no suitable jobs']
         self.build.results = results.SKIPPED
         return results.SKIPPED
+
+
+def do_step_if(step_data):
+    when = step_data.pop('when', None)
+    skip_when = step_data.pop('skip_when', None)
+    if when is None and skip_when is None:
+        return step_data.get('doStepIf', True)
+
+    @defer.inlineCallbacks
+    def inner(build):
+        if when is not None:
+            value = yield build.render(properties.Interpolate(when))
+            return utils.to_bool(value)
+
+        if skip_when is not None:
+            value = yield build.render(properties.Interpolate(skip_when))
+            return not utils.to_bool(value)
+
+        return True
+
+    return inner
 
 
 class DistributeStep(buildstep.BuildStep):

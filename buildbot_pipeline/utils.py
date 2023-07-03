@@ -138,3 +138,7 @@ def get_last_successful_build_for_sourcestamp(master, builderid, ssid):
 
         return conn.execute(q).fetchone()
     return master.db.pool.do(thd)
+
+
+def to_bool(value):
+   return value and value not in ('0', 'false', 'no', 'False')
