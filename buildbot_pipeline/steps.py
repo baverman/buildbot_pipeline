@@ -91,7 +91,10 @@ def gen_steps(step, data):
             else:
                 builders.append(it['name'])
                 builder_props[it['name']] = it.get('properties', {})
-        return GatherBuilders(wait_for_finish=info.get('waitForFinish', True), build_props=build_props)
+        return GatherBuilders(
+            local=False,
+            wait_for_finish=info.get('waitForFinish', True),
+            build_props=build_props)
     elif 'steps' in data:
         return [gen_steps(step, it) for it in data['steps']]
     elif 'parallel' in data:
@@ -261,12 +264,50 @@ class GatherBuilders(buildstep.BuildStep):
     def __init__(self, **kwargs):
         self.pipeline_build_props = kwargs.pop('build_props', None)
         self.wait_for_finish = kwargs.pop('wait_for_finish', False)
+        self.is_local = kwargs.pop('local', True)
         super().__init__(**kwargs)
 
     @defer.inlineCallbacks
-    def run(self):
+    def list_pipeline_files(self):
         workdir = os.path.join(self.getProperty('builddir'), self.workdir)
+        wc_path = Path(workdir)
+        buildbot_path = wc_path / self.getProperty('pipeline_stepsdir', DEFAULT_STEPSDIR)
+        result = []
 
+        def extract_parts(fullpath):
+            repopath = str(fullpath.relative_to(wc_path))
+            name, _, _ = str(fullpath.relative_to(buildbot_path)).rpartition('.')
+            return name, str(fullpath), repopath
+
+        if self.is_local:
+            for it in buildbot_path.glob('**/*.yaml'):
+                result.append(extract_parts(it))
+        else:
+            rv = yield utils.silent_remote_command(self, 'glob', path=str(buildbot_path / '**/*.yaml'))
+            for it in rv.updates['files'][0]:
+                result.append(extract_parts(Path(it)))
+        return result
+
+    @defer.inlineCallbacks
+    def get_pipeline_content(self, fullpath):
+        if self.is_local:
+            with open(fullpath) as f:
+                return yaml.safe_load(f)
+        else:
+            writer = utils.BufWriter()
+            try:
+                rv = yield utils.silent_remote_command(
+                    self, 'uploadFile', workdir='/', workersrc=fullpath, writer=writer,
+                    blocksize=16384, maxsize=1 << 20, keepstamp=False)
+                if rv.rc == results.SUCCESS:
+                    writer.buf.seek(0)
+                    return yaml.safe_load(writer.buf)
+                return None
+            finally:
+                writer.buf.close()
+
+    @defer.inlineCallbacks
+    def run(self):
         build_props = self.pipeline_build_props or self.getProperty('pipeline_build_props', {})
         forced_builders = build_props.get('builders')
         common_props = build_props.get('common_props', {})
@@ -277,65 +318,67 @@ class GatherBuilders(buildstep.BuildStep):
 
         result = results.SUCCESS
         step_info = []
-        repo_path = Path(workdir)
-        buildbot_path = repo_path / self.getProperty('pipeline_stepsdir', DEFAULT_STEPSDIR)
         changes = list(self.build.allChanges())
-        for it in buildbot_path.glob('**/*.yaml'):
-            it_repo_path = str(it.relative_to(repo_path))
-            name, _, _ = str(it.relative_to(buildbot_path)).rpartition('.')
+        pipelines = yield self.list_pipeline_files()
+        for name, fullpath, repopath in pipelines:
+            skip_reason = 'unknown'
+            start_build = None
+
+            if forced_builders:
+                start_build = name in forced_builders
+                if not start_build:
+                    continue
+
             try:
-                with open(it) as f:
-                    step = yaml.safe_load(f)
+                step = yield self.get_pipeline_content(fullpath)
             except Exception as e:
                 result = results.WARNINGS
                 yield self.addCompleteLog(name, Failure(e).getTraceback())
-            else:
-                repo = self.getProperty('repository')
-                step['name'] = name
-                if 'steps' in step:
-                    step['steps'].insert(0, {'git': True, 'repourl': repo})
+                continue
 
-                skip_reason = 'unknown'
-                start_build = None
+            if not step:
+                continue
 
-                if forced_builders:
-                    start_build = name in forced_builders
+            repo = self.getProperty('repository')
+            step['name'] = name
+            if 'steps' in step:
+                step['steps'].insert(0, {'git': True, 'repourl': repo})
 
-                if step.get('disabled'):
-                    start_build = False
-                    skip_reason = 'disabled'
+            if step.get('disabled'):
+                start_build = False
+                skip_reason = 'disabled'
 
-                if changes:
-                    if start_build is None and it_repo_path in changes[0].files:
-                        start_build = True
+            if changes:
+                if start_build is None and repopath in changes[0].files:
+                    start_build = True
 
-                    if start_build is None and 'filter' in step:
-                        if 'status' not in step['filter']:
-                            step['filter']['status'] = 'new'
+                if start_build is None and 'filter' in step:
+                    if 'status' not in step['filter']:
+                        step['filter']['status'] = 'new'
 
-                        try:
-                            flt = filters.make_filters(step['filter'])
-                        except Exception as e:
-                            result = results.WARNINGS
-                            skip_reason = str(e)
-                            yield self.addCompleteLog(name, str(e))
+                    try:
+                        flt = filters.make_filters(step['filter'])
+                    except Exception as e:
+                        result = results.WARNINGS
+                        skip_reason = str(e)
+                        yield self.addCompleteLog(name, str(e))
+                    else:
+                        changes[0].props = self.getProperties()
+                        if flt and flt(changes[0]):
+                            start_build = True
                         else:
-                            changes[0].props = self.getProperties()
-                            if flt and flt(changes[0]):
-                                start_build = True
-                            else:
-                                skip_reason = 'filter'
+                            skip_reason = 'filter'
 
-                if start_build:
-                    props = step.get('properties', {}).copy()
-                    props.update(common_props)
-                    props.update(builder_props.get(name, {}))
-                    if props:
-                        props['pipeline_passthrough_props'] = list(props)
-                    step['properties'] = props
-                    step_info.append(step)
-                else:
-                    yield self.addCompleteLog(name, f'skipped by: {skip_reason}')
+            if start_build:
+                props = step.get('properties', {}).copy()
+                props.update(common_props)
+                props.update(builder_props.get(name, {}))
+                if props:
+                    props['pipeline_passthrough_props'] = list(props)
+                step['properties'] = props
+                step_info.append(step)
+            else:
+                yield self.addCompleteLog(name, f'skipped by: {skip_reason}')
 
         if step_info:
             self.build.addStepsAfterCurrentStep([Parallel(step_info, inner=False, waitForFinish=self.wait_for_finish)])
