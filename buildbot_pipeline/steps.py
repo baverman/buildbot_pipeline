@@ -87,7 +87,7 @@ def gen_steps(step, data):
         build_props = {'builders': builders, 'common_props': common_props, 'builder_props': builder_props}
         for it in info.get('builders', []):
             if isinstance(it, str):
-                builders.append('it')
+                builders.append(it)
             else:
                 builders.append(it['name'])
                 builder_props[it['name']] = it.get('properties', {})
