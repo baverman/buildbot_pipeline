@@ -57,6 +57,36 @@ def gen_steps(step, data):
         data['env']['WORKSPACE'] = properties.Interpolate('%(prop:builddir)s')
         data['env']['BUILD_STATUS'] = build_results
         return DynamicStep(**data)
+    elif 'trigger' in data:
+        # trigger:
+        #   - builder1
+        #   - name: builder2
+        #     properties:
+        #       prop1: value
+        #
+        # trigger:
+        #   properties:
+        #     prop: value
+        #   builders:
+        #     - builder1
+        #     - name: builder2:
+        #       properties:
+        #         prop1: value
+        info = data['trigger']
+        if type(info) is list:
+            info = {'builders': info}
+
+        builders = []
+        common_props = info.get('properties', {})
+        builder_props = {}
+        build_props = {'builders': builders, 'common_props': common_props, 'builder_props': builder_props}
+        for it in info.get('builders', []):
+            if isinstance(it, str):
+                builders.append('it')
+            else:
+                builders.append(it['name'])
+                builder_props[it['name']] = it.get('properties', {})
+        return GatherBuilders(wait_for_finish=info.get('waitForFinish', True), build_props=build_props)
     elif 'steps' in data:
         return [gen_steps(step, it) for it in data['steps']]
     elif 'parallel' in data:
@@ -223,11 +253,16 @@ class GatherBuilders(buildstep.BuildStep):
     haltOnFailure = True
     name = 'parse builders'
 
+    def __init__(self, **kwargs):
+        self.pipeline_build_props = kwargs.pop('build_props', None)
+        self.wait_for_finish = kwargs.pop('wait_for_finish', False)
+        super().__init__(**kwargs)
+
     @defer.inlineCallbacks
     def run(self):
         workdir = os.path.join(self.getProperty('builddir'), self.workdir)
 
-        build_props = self.getProperty('pipeline_build_props', {})
+        build_props = self.pipeline_build_props or self.getProperty('pipeline_build_props', {})
         forced_builders = build_props.get('builders')
         common_props = build_props.get('common_props', {})
         builder_props = build_props.get('builder_props', {})
@@ -257,8 +292,9 @@ class GatherBuilders(buildstep.BuildStep):
 
                 skip_reason = 'unknown'
                 start_build = None
-                if forced_builders and name in forced_builders:
-                    start_build = True
+
+                if forced_builders:
+                    start_build = name in forced_builders
 
                 if step.get('disabled'):
                     start_build = False
@@ -297,7 +333,7 @@ class GatherBuilders(buildstep.BuildStep):
                     yield self.addCompleteLog(name, f'skipped by: {skip_reason}')
 
         if step_info:
-            self.build.addStepsAfterCurrentStep([Parallel(step_info, inner=False, waitForFinish=False)])
+            self.build.addStepsAfterCurrentStep([Parallel(step_info, inner=False, waitForFinish=self.wait_for_finish)])
             return result
 
         self.descriptionDone = ['There are no suitable jobs']
