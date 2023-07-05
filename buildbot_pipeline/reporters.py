@@ -108,6 +108,6 @@ def report_formatter(template_property, default_template):
         props = {k: v[0] for k, v in report['body']['properties'].items()}
         template = props.get(template_property) or default_template
         report['body']['properties'] = props
-        return jinja_template(template.strip()).render(**report)
+        return jinja_template(template.strip()).render(props=props, **report)
 
     return formatter
