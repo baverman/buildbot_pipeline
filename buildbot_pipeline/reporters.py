@@ -6,6 +6,7 @@ from buildbot.reporters import gerrit, utils, mail
 from buildbot.data import resultspec
 from buildbot.process import results
 from buildbot.reporters.generators import build as generators_build
+from buildbot.reporters.base import ReporterBase
 
 
 class GerritStatusPush(gerrit.GerritStatusPush):
@@ -65,9 +66,22 @@ class GerritStatusPush(gerrit.GerritStatusPush):
 
 class BuildStatusGenerator(generators_build.BuildStatusGenerator):
     def is_message_needed_by_props(self, build):
-        if 'email_notification_address' not in build['properties']:
+        result =  super().is_message_needed_by_props(build)
+        if result:
+            return True
+
+        build_tags = build['properties'].get('build_tags', [None])[0] or []
+        if self.tags is not None and not self._matches_any_tag(build_tags):
             return False
-        return super().is_message_needed_by_props(build)
+
+        return True
+
+
+class LogReporter(ReporterBase):
+    def sendMessage(self, reports):
+        import pprint
+        for it in reports:
+            print('@@ REPORT\n', pprint.pformat(it), flush=True)
 
 
 class MailNotifier(mail.MailNotifier):

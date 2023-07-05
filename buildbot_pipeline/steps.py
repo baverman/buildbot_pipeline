@@ -206,7 +206,7 @@ class Parallel(Trigger):
             else:
                 s['props_to_set'].update(
                    virtual_builder_name=it['name'],
-                   virtual_builder_tags=[],
+                   virtual_builder_tags=utils.ensure_list(it.get('tags', [])),
                    pipeline_builder_prefix='~prop-builder',
                    reporters='gerrit',
                    pipeline_concurrency=str(it.get('concurrency', 1)),
@@ -375,6 +375,8 @@ class GatherBuilders(buildstep.BuildStep):
                 props.update(builder_props.get(name, {}))
                 if props:
                     props['pipeline_passthrough_props'] = list(props)
+
+                props.update(step.get('local_properties', {}))
                 step['properties'] = props
                 step_info.append(step)
             else:
