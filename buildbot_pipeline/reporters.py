@@ -1,5 +1,7 @@
 import operator
 import itertools
+import jinja2
+from functools import lru_cache
 
 from twisted.internet import defer
 from buildbot.reporters import gerrit, utils, mail
@@ -79,9 +81,9 @@ class BuildStatusGenerator(generators_build.BuildStatusGenerator):
 
 class LogReporter(ReporterBase):
     def sendMessage(self, reports):
-        import pprint
+        fmt = report_formatter('notify_log_template', '{{ body | pprint }}')
         for it in reports:
-            print('@@ REPORT\n', pprint.pformat(it), flush=True)
+            print('@@ REPORT\n', fmt(it), flush=True)
 
 
 class MailNotifier(mail.MailNotifier):
@@ -94,3 +96,18 @@ class MailNotifier(mail.MailNotifier):
             extra = yield super().getResponsibleUsersForBuild(master, buildid)
             result.extend(extra)
         return result
+
+
+@lru_cache(100)
+def jinja_template(template):
+    return jinja2.Template(template)
+
+
+def report_formatter(template_property, default_template):
+    def formatter(report: dict):
+        props = {k: v[0] for k, v in report['body']['properties'].items()}
+        template = props.get(template_property) or default_template
+        report['body']['properties'] = props
+        return jinja_template(template.strip()).render(**report)
+
+    return formatter
