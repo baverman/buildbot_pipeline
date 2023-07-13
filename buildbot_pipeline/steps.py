@@ -14,7 +14,7 @@ from buildbot.steps.source import git
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
-from buildbot_pipeline import junit, utils, filters, file_store, build
+from buildbot_pipeline import junit, utils, filters, file_store, build, schedulers as bbp_schedulers
 
 DEFAULT_STEPSDIR = 'buildbot'
 HIDDEN = 'hidden'
@@ -36,6 +36,29 @@ def process_interpolate(value):
         return {k: process_interpolate(v) for k, v in value.items()}
     else:
         return value
+
+
+def normalize_pipeline(pipeline):
+    if 'filters' in pipeline:
+        pipeline['filter'] = pipeline.pop('filters')
+
+    if 'scheduler' in pipeline:
+        pipeline['schedulers'] = pipeline.pop('scheduler')
+
+    if 'schedulers' in pipeline:
+        pipeline['schedulers'] = utils.ensure_list(pipeline['schedulers'])
+
+    pipeline['steps'] = utils.ensure_list(pipeline.get('steps', []))
+    if 'parallel' in pipeline:
+        pipeline['steps'].append({'parallel': pipeline.pop('parallel')})
+
+    if 'matrix' in pipeline:
+        pipeline['steps'].append({'matrix': pipeline.pop('matrix')})
+
+    if 'pmatrix' in pipeline:
+        pipeline['steps'].append({'parallel': {'matrix': pipeline.pop('matrix')}})
+
+    return pipeline
 
 
 def gen_steps(step, data):
@@ -74,7 +97,7 @@ def gen_steps(step, data):
         #     prop: value
         #   builders:
         #     - builder1
-        #     - name: builder2:
+        #     - name: builder2
         #       properties:
         #         prop1: value
         info = data['trigger']
@@ -316,6 +339,10 @@ class GatherBuilders(buildstep.BuildStep):
         if not self.getProperty('revision') and self.getProperty('got_revision'):
             self.setProperty('revision', self.getProperty('got_revision'), 'Build')
 
+        schedulers = []
+
+        branch = self.getProperty('branch')
+        repo = self.getProperty('repository')
         result = results.SUCCESS
         step_info = []
         changes = list(self.build.allChanges())
@@ -331,6 +358,7 @@ class GatherBuilders(buildstep.BuildStep):
 
             try:
                 step = yield self.get_pipeline_content(fullpath)
+                step = normalize_pipeline(step)
             except Exception as e:
                 result = results.WARNINGS
                 yield self.addCompleteLog(name, Failure(e).getTraceback())
@@ -339,10 +367,19 @@ class GatherBuilders(buildstep.BuildStep):
             if not step:
                 continue
 
-            repo = self.getProperty('repository')
+            if self.is_local and not self.pipeline_build_props:
+                for it in step.get('schedulers', []):
+                    try:
+                        it['builder'] = name
+                        it['name'] = f'{name}/{it["name"]}'
+                        it['repo'] = repo
+                        schedulers.append(it)
+                    except Exception as e:
+                        yield self.addCompleteLog(name + '/scheduler', Failure(e).getTraceback())
+                        break
+
             step['name'] = name
-            if 'steps' in step:
-                step['steps'].insert(0, {'git': True, 'repourl': repo})
+            step['steps'].insert(0, {'git': True, 'repourl': repo})
 
             if step.get('disabled'):
                 start_build = False
@@ -381,6 +418,9 @@ class GatherBuilders(buildstep.BuildStep):
                 step_info.append(step)
             else:
                 yield self.addCompleteLog(name, f'skipped by: {skip_reason}')
+
+        if schedulers:
+            yield bbp_schedulers.update_schedulers(self.master, branch, schedulers)
 
         if step_info:
             self.build.addStepsAfterCurrentStep([Parallel(step_info, inner=False, waitForFinish=self.wait_for_finish)])
