@@ -1,3 +1,6 @@
+import os
+import json
+
 from buildbot.schedulers.timed import Periodic, Nightly
 from twisted.internet import defer
 from twisted.python import log
@@ -36,6 +39,31 @@ def config_branch(sdata):
     return sdata.get('config-branch') or sdata['branch']
 
 
+def save_state(master):
+    result = []
+    for v in list(master.config.schedulers.values()):
+        if hasattr(v, 'pipeline_state'):
+            result.append(v.pipeline_state)
+
+    fname = os.path.join(master.basedir, 'schedulers.json')
+    tmpfname = fname + '.tmp'
+    with open(tmpfname, 'w') as f:
+        f.write(json.dumps(result))
+    os.rename(tmpfname, fname)
+
+
+def load_state(basedir):
+    fname = os.path.join(basedir, 'schedulers.json')
+    if not os.path.exists(fname):
+        return []
+
+    result = []
+    for it in json.loads(open(fname).read()):
+        result.append(make_scheduler(it))
+
+    return result
+
+
 @defer.inlineCallbacks
 def update_schedulers(master, branch, schedulers):
     if not branch:
@@ -69,3 +97,4 @@ def update_schedulers(master, branch, schedulers):
             log.msg(f'added schedulers on branch {branch}: {added_schedulers - removed_schedulers}')
 
         yield master.scheduler_manager.reconfigServiceWithBuildbotConfig(master.config)
+        save_state(master)
