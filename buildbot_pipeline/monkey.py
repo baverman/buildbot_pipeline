@@ -75,8 +75,8 @@ def getBuildProperties(orig, self, bid, resultSpec=None, props=None):
 
         # return only required props
         if props:
-            for bid, bprops in result.items():
-                result[bid] = {k: bprops[k] for k in props if k in bprops}
+            for rbid, bprops in result.items():
+                result[rbid] = {k: bprops[k] for k in props if k in bprops}
 
         if not many:
             result = result.get(bid, {})
