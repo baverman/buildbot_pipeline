@@ -6,6 +6,7 @@ from twisted.internet import defer
 from buildbot.process import remotecommand
 from buildbot.process.results import SUCCESS
 from buildbot.worker.protocols import base
+from buildbot.db.base import CachedMethod
 
 
 ntype = type('')
@@ -97,7 +98,10 @@ class BufWriter(base.FileWriterImpl):
 def wrapit(obj, attr=None):
     def decorator(fn):
         lattr =  attr or fn.__name__
+
         orig = getattr(obj, lattr)
+        if isinstance(orig, CachedMethod):
+            orig = orig.method
 
         @functools.wraps(fn)
         def inner(*args, **kwargs):

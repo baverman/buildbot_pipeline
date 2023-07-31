@@ -1,5 +1,5 @@
 import os.path
-from twisted.web import static, resource
+from twisted.web import static
 
 from buildbot.www import service
 from buildbot_pipeline import utils

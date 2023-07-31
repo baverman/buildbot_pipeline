@@ -3,7 +3,9 @@ import json
 import sqlalchemy as sa
 from twisted.internet import defer
 
-import buildbot.db.builds as db_builds
+import buildbot.db.changes
+import buildbot.db.buildsets
+import buildbot.db.builds
 import buildbot.data.builds as data_builds
 import buildbot.data.connector as data_connector
 import buildbot.data.properties as data_properties
@@ -21,10 +23,13 @@ from buildbot_pipeline.utils import wrapit, nstr, bstr, add_method
 # gc.collect()
 # pprint(_refs)
 
+PROP_ALL_NAME = '__bbp_props__'
+FILE_ALL_NAME = '__bbp_files__'
+
 # original getBuildProperties fetches props one-by-one and very slow for pages
 # with many builds. Patched version accepts multiple bid and list of props to
 # fetch.
-@wrapit(db_builds.BuildsConnectorComponent)
+@wrapit(buildbot.db.builds.BuildsConnectorComponent)
 def getBuildProperties(orig, self, bid, resultSpec=None, props=None):
     bp_tbl = self.db.model.build_properties
     if isinstance(bid, (list, tuple)):
@@ -37,7 +42,7 @@ def getBuildProperties(orig, self, bid, resultSpec=None, props=None):
         many = False
 
     if props:
-        w = w & bp_tbl.c.name.in_(props)
+        w = w & bp_tbl.c.name.in_(props + [PROP_ALL_NAME])
 
     def thd(conn):
         q = sa.select(
@@ -49,14 +54,24 @@ def getBuildProperties(orig, self, bid, resultSpec=None, props=None):
         else:
             data = conn.execute(q)
 
+        all_result = {}
         result = {}
         for row in data.fetchall():
+            if row.name == PROP_ALL_NAME:
+                all_result.setdefault(row.buildid, {}).update(json.loads(row.value))
+                result.setdefault(row.buildid, {})
+                continue
             prop = (json.loads(row.value), row.source)
             try:
                 props = result[row.buildid]
             except KeyError:
                 props = result[row.buildid] = {}
             props[row.name] = prop
+
+        for k, v in result.items():
+            if k in all_result:
+                all_result[k].update(v)
+                result[k] = all_result[k]
 
         if not many:
             result = result.get(bid, {})
@@ -188,22 +203,102 @@ def setBuildProperties(orig, self, buildid, properties):
         yield self.generateUpdateEvent(buildid, to_update)
 
 
-@add_method(db_builds.BuildsConnectorComponent)
+@add_method(buildbot.db.builds.BuildsConnectorComponent)
 def setBuildProperties(self, bid, props):
     def thd(conn):
         with conn.begin():
             bp_tbl = self.db.model.build_properties
             q = sa.select([bp_tbl.c.name, bp_tbl.c.value, bp_tbl.c.source], whereclause=bp_tbl.c.buildid == bid)
+
+            changed = {}
+            new = {}
             existing_props = {it.name: it for it in conn.execute(q).fetchall()}
-            for name, (value, source) in props.items():
-                value_js = json.dumps(value)
-                if name in existing_props:
-                    if existing_props[name].value != value_js or existing_props[name].source != source:
-                        conn.execute(bp_tbl.update()
-                                     .where(bp_tbl.c.buildid == bid, bp_tbl.c.name == name)
-                                     .values(value=value_js, source=source))
-                else:
-                    conn.execute(bp_tbl.insert(),
-                                 dict(buildid=bid, name=name, value=value_js,
-                                      source=source))
+
+            if PROP_ALL_NAME in existing_props:
+                all_existing_props = json.loads(existing_props[PROP_ALL_NAME].value)
+                for name, (value, source) in props.items():
+                    value_js = json.dumps(value)
+                    if name in existing_props:
+                        if existing_props[name].value != value_js or existing_props[name].source != source:
+                            changed[name] = value_js, source
+                    elif name in all_existing_props:
+                        evalue, esource = all_existing_props[name]
+                        if evalue != value or esource != source:
+                            new[name] = value_js, source
+                    else:
+                        new[name] = value_js, source
+            else:
+                new[PROP_ALL_NAME] = json.dumps(props), 'buildbot_pipeline'
+
+            for name, (value, source) in changed.items():
+                conn.execute(bp_tbl.update()
+                             .where(bp_tbl.c.buildid == bid, bp_tbl.c.name == name)
+                             .values(value=value, source=source))
+
+            for name, (value, source) in new.items():
+                conn.execute(bp_tbl.insert(),
+                             dict(buildid=bid, name=name, value=value,
+                                  source=source))
     return self.db.pool.do(thd)
+
+
+@wrapit(buildbot.db.changes.ChangesConnectorComponent)
+def addChange(orig, self, *args, **kwargs):
+    props = kwargs.get('properties')
+    if props:
+        kwargs['properties'] = {PROP_ALL_NAME: (props, 'Change')}
+
+    files = kwargs.get('files')
+    if files:
+        kwargs['files'] = [FILE_ALL_NAME + json.dumps(files)]
+    return orig(self, *args, **kwargs)
+
+
+@wrapit(buildbot.db.changes.ChangesConnectorComponent)
+def _chdict_from_change_row_thd(orig, self, conn, ch_row):
+    rv = orig(self, conn, ch_row)
+    props = rv.get('properties', {})
+    if PROP_ALL_NAME in props:
+        rv['properties'] = props[PROP_ALL_NAME][0]
+
+    files = rv.get('files', [])
+    if files and files[0].startswith(FILE_ALL_NAME):
+        rv['files'] = json.loads(files[0][len(FILE_ALL_NAME):])
+
+    return rv
+
+
+@wrapit(buildbot.db.buildsets.BuildsetsConnectorComponent)
+def addBuildset(orig, self, *args, **kwargs):
+    props = kwargs.get('properties')
+    if props:
+        kwargs['properties'] = {PROP_ALL_NAME: (props, 'buildbot_pipeline')}
+    return orig(self, *args, **kwargs)
+
+
+class FakeCache:
+    def put(self, *args, **kwargs):
+        pass
+
+
+@wrapit(buildbot.db.buildsets.BuildsetsConnectorComponent, 'getBuildsetProperties')
+@defer.inlineCallbacks
+def getBuildsetProperties(orig, self, bsid):
+    rv = yield orig(self, bsid)
+    if PROP_ALL_NAME in rv:
+        rv = rv[PROP_ALL_NAME][0]
+    return rv
+
+
+buildbot.db.buildsets.BuildsetsConnectorComponent.getBuildsetProperties.cache = FakeCache()
+
+
+def patch_runtime():
+    import gc
+    refs = gc.get_referrers(buildbot.db.buildsets.BuildsetsConnectorComponent)
+    for obj in refs:
+        if type(obj) is buildbot.db.buildsets.BuildsetsConnectorComponent:
+            delattr(obj, 'getBuildsetProperties')
+
+
+patch_runtime()
