@@ -63,15 +63,20 @@ def getBuildProperties(orig, self, bid, resultSpec=None, props=None):
                 continue
             prop = (json.loads(row.value), row.source)
             try:
-                props = result[row.buildid]
+                bprops = result[row.buildid]
             except KeyError:
-                props = result[row.buildid] = {}
-            props[row.name] = prop
+                bprops = result[row.buildid] = {}
+            bprops[row.name] = prop
 
         for k, v in result.items():
             if k in all_result:
                 all_result[k].update(v)
                 result[k] = all_result[k]
+
+        # return only required props
+        if props:
+            for bid, bprops in result.items():
+                result[bid] = {k: bprops[k] for k in props if k in bprops}
 
         if not many:
             result = result.get(bid, {})

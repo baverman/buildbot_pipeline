@@ -40,7 +40,9 @@ export function resultTitle(obj) {
 }
 
 export async function fetchData(config, url) {
-    const resp = await fetch(config.backend + url)
+    const resp = await fetch(config.backend + url, {
+        'headers': {'Accept': 'application/json'},
+    })
     return await resp.json()
 }
 
