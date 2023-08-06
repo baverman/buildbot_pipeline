@@ -69,6 +69,9 @@ def gen_steps(step, data):
         data['shell'] = data.pop('shell-fail')
         data['haltOnFailure'] = True
 
+    if 'pmatrix' in data:
+        data = {'parallel': {'matrix': data.pop('pmatrix')}}
+
     if 'decodeRC' in data:
         # keys are implicitly converted to str during json dumping
         # fix type back to int
@@ -250,12 +253,7 @@ class PropStep(buildstep.BuildStep):
 
     @defer.inlineCallbacks
     def checkAlreadyPassed(self):
-        ss = self.build.getSourceStamp()
-        if not ss:
-            return None
-
-        bid = yield self.build.getBuilderId()
-        build = yield utils.get_last_successful_build_for_sourcestamp(self.master, bid, ss.ssid)
+        build = yield utils.get_last_successful_build(self.master, self.build.buildid)
         if build:
             self.addURL('Last successful build', f'#/builders/{build.builderid}/builds/{build.number}')
             self.descriptionDone = ['Already passed']
