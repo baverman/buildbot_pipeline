@@ -14,6 +14,7 @@ from buildbot.data import resultspec
 from buildbot.www import rest
 
 from buildbot_pipeline.utils import wrapit, nstr, bstr, add_method
+from buildbot_pipeline import build as bpp_build
 
 # import gc
 # from pprint import pprint
@@ -89,9 +90,17 @@ def getBuildProperties(orig, self, bid, resultSpec=None, props=None):
 @wrapit(data_builds.BuildsEndpoint)
 @defer.inlineCallbacks
 def get(orig, self, resultSpec, kwargs):
+    orig_req_args = resultSpec.fieldMapping.get('orig_req_args', {})
     changeid = kwargs.get('changeid')
     if changeid is not None:
         builds = yield self.master.db.builds.getBuildsForChange(changeid)
+    elif b'relatedfor' in orig_req_args:
+        buildid = int(nstr(orig_req_args[b'relatedfor'][0]))
+        bpath = (yield bpp_build.get_bpath(self.master, buildid)) or [buildid]
+        builds = yield bpp_build.get_child_builds(self.master, bpath[:1])
+        root_build = yield self.master.db.builds.getBuild(bpath[0])
+        if root_build:
+            builds.append(root_build)
     else:
         # following returns None if no filter
         # true or false, if there is a complete filter
@@ -144,6 +153,7 @@ MULTI_IDS_FIELDS = {
 
 RESERVED_ARGS = [
     b'_download',
+    b'relatedfor',
 ]
 
 COLUMN_EXPR = {
@@ -153,6 +163,7 @@ COLUMN_EXPR = {
 
 @wrapit(data_connector.DataConnector)
 def resultspec_from_jsonapi(orig, self, req_args, *args, **kwargs):
+    orig_req_args = req_args
     req_args = req_args.copy()
     additional_filters = []
     for arg, (field, cnv) in MULTI_IDS_FIELDS.items():
@@ -165,6 +176,7 @@ def resultspec_from_jsonapi(orig, self, req_args, *args, **kwargs):
 
     rspec = orig(self, req_args, *args, **kwargs)
     rspec.filters.extend(additional_filters)
+    rspec.fieldMapping['orig_req_args'] = orig_req_args
     return rspec
 
 

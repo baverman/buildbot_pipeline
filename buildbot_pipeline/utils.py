@@ -124,50 +124,13 @@ class adict(dict):
     __getattr__ = dict.__getitem__
 
 
-def get_parent_buildid(master, conn, bid):
-    if not bid:
-        return None, None
-    b = master.db.model.builds
-    bs = master.db.model.buildsets
-    br = master.db.model.buildrequests
-    q = (bs.select().with_only_columns(b.c.builderid, bs.c.parent_buildid)
-         .select_from(bs.join(br).join(b))
-         .where(b.c.id == bid)
-         .limit(1))
-    rv = conn.execute(q).fetchone()
-    return rv and (rv.parent_buildid, rv.builderid)
-
-
-def get_last_successful_build(master, bid):
+def get_parent_buildid(master, bsid):
     def thd(conn):
-        b = master.db.model.builds
         bs = master.db.model.buildsets
-        br = master.db.model.buildrequests
-
-        p_bid, builderid = get_parent_buildid(master, conn, bid)
-        gp_bid, p_builderid = get_parent_buildid(master, conn, p_bid)
-
-        if gp_bid:
-            q = (b.select().with_only_columns(b.c.id)
-                 .select_from(b.join(br).join(bs))
-                 .where(b.c.builderid == p_builderid, bs.c.parent_buildid == gp_bid))
-            parent_builds = [it.id for it in conn.execute(q)]
-        else:
-            parent_builds = [p_bid]
-
-        if not parent_builds:
-            return None
-
-        q = (b.select()
-             .select_from(b.join(br).join(bs))
-             .where(b.c.builderid == builderid,
-                    bs.c.complete == 1,
-                    bs.c.parent_buildid.in_(parent_builds),
-                    b.c.results == 0)
-             .order_by(b.c.number.desc())
-             .limit(1))
-
-        return conn.execute(q).fetchone()
+        q = (bs.select().with_only_columns(bs.c.parent_buildid)
+             .where(bs.c.id == bsid))
+        rv = conn.execute(q).fetchone()
+        return rv and rv.parent_buildid
     return master.db.pool.do(thd)
 
 

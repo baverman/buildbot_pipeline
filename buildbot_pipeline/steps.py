@@ -253,7 +253,7 @@ class PropStep(buildstep.BuildStep):
 
     @defer.inlineCallbacks
     def checkAlreadyPassed(self):
-        build = yield utils.get_last_successful_build(self.master, self.build.buildid)
+        build = yield self.build.get_last_successful_build()
         if build:
             self.addURL('Last successful build', f'#/builders/{build.builderid}/builds/{build.number}')
             self.descriptionDone = ['Already passed']

@@ -1,6 +1,6 @@
 <script setup>
 import { inject, ref, onMounted, computed } from 'vue'
-import {getChangesBySSID, getChangeBuilds, getBuilders, resultClass} from '../data'
+import {getChangesBySSID, getRelatedBuilds, getBuilders, resultClass} from '../data'
 
 const config = inject('config')
 const props = defineProps(['build', 'buildset'])
@@ -14,29 +14,17 @@ function showBuilder(it) {
 }
 
 async function getData() {
-    var plist = buildset.sourcestamps.map(it => getChangesBySSID(config, it.ssid))
-    const cl = await Promise.all(plist)
-    const result = []
-    for (var it of cl) {
-        for (var c of it) {
-            result.push(c)
-        }
-    }
-
-    plist = result.map(it => getChangeBuilds(config, it.changeid))
-    const cbuilds = await Promise.all(plist)
+    const cbuilds = await getRelatedBuilds(config, build.buildid)
     const b2b = new Map()
-    for (var blist of cbuilds) {
-        for (var b of blist) {
-            if (b.buildid == build.buildid) {
-                b.current = true
-            }
-            const k = b.builderid
-            if (b2b.has(k)) {
-                b2b.get(k).push(b)
-            } else {
-                b2b.set(k, [b])
-            }
+    for (var b of cbuilds) {
+        if (b.buildid == build.buildid) {
+            b.current = true
+        }
+        const k = b.builderid
+        if (b2b.has(k)) {
+            b2b.get(k).push(b)
+        } else {
+            b2b.set(k, [b])
         }
     }
 

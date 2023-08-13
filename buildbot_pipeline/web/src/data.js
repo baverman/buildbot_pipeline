@@ -78,6 +78,11 @@ export async function getBuildsByNumber(config, bnums) {
     return (await fetchData(config, url)).builds || null
 }
 
+export async function getRelatedBuilds(config, buildid) {
+    const url = `/api/v2/builds?relatedfor=${buildid}`
+    return (await fetchData(config, url)).builds || []
+}
+
 export async function getBuildsByRequest(config, reqids, settings) {
     if (!reqids.length) {
         return []
