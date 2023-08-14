@@ -136,3 +136,9 @@ def get_parent_buildid(master, bsid):
 
 def to_bool(value):
    return value and value not in ('0', 'false', 'no', 'False')
+
+
+def explain(conn, query):
+    q = 'EXPLAIN QUERY PLAN ' + str(query)
+    for r in conn.execute(q, query.compile().params):
+        print(r)

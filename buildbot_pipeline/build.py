@@ -70,7 +70,7 @@ def get_child_builds(master, bpath, builderid=None, success=None):
     def thd(conn):
         b = master.db.model.builds
         bd = master.db.model.build_data
-        name = 'bpath:' + ':'.join(map(str, bpath)) + ':%'
+        name = 'bpath:' + ':'.join(map(str, bpath))
         cond = []
 
         if builderid is not None:
@@ -80,8 +80,8 @@ def get_child_builds(master, bpath, builderid=None, success=None):
             cond.append(b.c.results == 0)
 
         q = (b.select()
-             .select_from(b.join(bd))
-             .where(bd.c.name.like(name), *cond)
+             .select_from(bd.join(b))
+             .where(bd.c.name.like(name+'%'), *cond)
              .order_by(b.c.number.desc()))
 
         if success:
