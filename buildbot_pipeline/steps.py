@@ -200,6 +200,7 @@ class Parallel(Trigger):
             builder_name = self.getProperty('parent_builder_name') or self.getProperty('virtual_builder_name') or self.getProperty('buildername')
             worker_name = self.getProperty('workername')
             builddir = self.getProperty('builddir')
+            workdir = self.getProperty('wc')
             root_buildnumber = self.getProperty('pipeline_buildnumber') or self.getProperty('buildnumber')
 
         result = []
@@ -226,6 +227,7 @@ class Parallel(Trigger):
                     workername=worker_name,
                     parent_builder_name=builder_name,
                     pipeline_builddir=builddir,
+                    pipeline_wc=workdir,
                     pipeline_builder_prefix='~prop-inner-builder',
                     pipeline_buildnumber=root_buildnumber,
                 )

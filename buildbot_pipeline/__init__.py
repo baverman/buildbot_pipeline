@@ -37,7 +37,7 @@ def builder_names(props):
 
 
 def init_pipeline(master_config, builders=10, inner_builders=30,
-                  stepsdir=steps.DEFAULT_STEPSDIR, vcs_opts=None):
+                  stepsdir=steps.DEFAULT_STEPSDIR, vcs_opts=None, workdir_pool_config=None):
     build_counters['~prop-builder'] = BuilderCounter('~prop-builder', builders)
     build_counters['~prop-inner-builder'] = BuilderCounter('~prop-inner-builder', inner_builders)
 
@@ -49,6 +49,7 @@ def init_pipeline(master_config, builders=10, inner_builders=30,
     factory = BuildFactory()
     factory.buildClass = build.PipelineBuild
     factory.addStep(steps.PropStep())
+    build.PipelineBuild.workdir_pool_manager = build.WorkdirPoolManager(workdir_pool_config or {})
 
     for i in range(builders):
         master_config['builders'].append(
