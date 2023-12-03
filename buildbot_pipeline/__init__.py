@@ -1,6 +1,9 @@
 import itertools
-from buildbot.plugins import util as _
 
+from twisted.internet import defer
+
+from buildbot.plugins import util as _
+from buildbot.util.service import BuildbotService
 from buildbot.process import properties
 from buildbot.process.factory import BuildFactory
 from buildbot.config.builder import BuilderConfig
@@ -34,6 +37,19 @@ def builder_names(props):
     worker = props.getProperty('workername', '-some-')
     name = build_counters[prefix].next_builder(worker)
     return [name]
+
+
+class PipelineService(BuildbotService):
+    name = "pipelineService"
+
+    @defer.inlineCallbacks
+    def reconfigService(self):
+        def setup_indexes(conn):
+            if conn.engine.url.drivername.startswith('postgresql'):
+                conn.execute('CREATE INDEX IF NOT EXISTS bbpipe_idx_build_data_name ON build_data (name text_pattern_ops)')
+            elif conn.engine.url.drivername.startswith('sqlite'):
+                conn.execute('CREATE INDEX IF NOT EXISTS bbpipe_idx_build_data_name ON build_data (name collate nocase)')
+        yield self.master.db.pool.do(setup_indexes)
 
 
 def init_pipeline(master_config, builders=10, inner_builders=30,
@@ -83,3 +99,4 @@ def init_pipeline(master_config, builders=10, inner_builders=30,
         factory=factory))
 
     master_config['schedulers'].append(Triggerable('trig-prop-builder', builder_names))
+    master_config['services'].append(PipelineService())
