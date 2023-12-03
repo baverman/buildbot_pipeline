@@ -1,8 +1,9 @@
 <script setup>
-import { inject, ref, onMounted } from 'vue'
+import { inject, ref } from 'vue'
 import {getStepLogs, parseStepUrls, getBuildsByNumber, getRequests, getBuilderNames, getBuildsByRequest} from '../data'
 import Log from './Log.vue'
 import Build from './Build.vue'
+import Loader from './Loader.vue'
 
 const config = inject('config')
 const props = defineProps(['step'])
@@ -39,18 +40,20 @@ async function poll() {
     }
 }
 
-onMounted(() => getData())
+const load = getData()
 </script>
 
 <template>
-    <div class="vspacer">
-        <ul v-if="other_urls.length">
-            <li v-for="url in other_urls"><a :href="url.url">{{ url.name }}</a></li>
-        </ul>
-        <div v-if="logs.length" class="vspacer">
-            <Log v-for="log in logs" :key="log.logid" :log="log" />
+    <Loader :wait="load">
+        <div class="vspacer">
+            <ul v-if="other_urls.length">
+                <li v-for="url in other_urls"><a :href="url.url">{{ url.name }}</a></li>
+            </ul>
+            <div v-if="logs.length" class="vspacer">
+                <Log v-for="log in logs" :key="log.logid" :log="log" />
+            </div>
+            <div v-for="url in request_urls">{{ url }}</div>
+            <Build v-for="it in builds" :key="it.bnum" :build="it" />
         </div>
-        <div v-for="url in request_urls">{{ url }}</div>
-        <Build v-for="it in builds" :key="it.bnum" :build="it" />
-    </div>
+    </Loader>
 </template>

@@ -1,5 +1,6 @@
 <script setup>
-import { inject, ref, onMounted, computed } from 'vue'
+import { inject, ref } from 'vue'
+import Loader from './Loader.vue'
 import {getChangesBySSID, getChangeBuilds, getBuilders, resultClass} from '../data'
 
 const config = inject('config')
@@ -21,18 +22,20 @@ async function getData() {
     changes.value = result
 }
 
-onMounted(() => getData())
+const load = getData()
 </script>
 
 <template>
-    <div class="vspacer" v-for="change in changes" :key="change.changeid">
-        <p style="line-height:130%">
-            <a :href="change.revlink">{{ change.author }}</a>
-            <pre>{{ change.comments }}</pre>
-            Branch: {{ change.branch }}<br>
-            Revision: {{ change.revision }}<br>
-            Files:
-            <ul><li v-for="fname in change.files" :key="fname">{{ fname }}</li></ul>
-        </p>
-    </div>
+    <Loader :wait="load">
+        <div class="vspacer" v-for="change in changes" :key="change.changeid">
+            <p style="line-height:130%">
+                <a :href="change.revlink">{{ change.author }}</a>
+                <pre>{{ change.comments }}</pre>
+                Branch: {{ change.branch }}<br>
+                Revision: {{ change.revision }}<br>
+                Files:
+                <ul><li v-for="fname in change.files" :key="fname">{{ fname }}</li></ul>
+            </p>
+        </div>
+    </Loader>
 </template>

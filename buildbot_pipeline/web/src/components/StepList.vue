@@ -1,7 +1,8 @@
 <script setup>
-import { inject, ref, onMounted, computed } from 'vue'
+import { inject, ref } from 'vue'
 import {getBuildSteps} from '../data'
 import StepListRow from './StepListRow.vue'
+import Loader from './Loader.vue'
 
 const config = inject('config')
 const props = defineProps(['build', 'filter-steps'])
@@ -26,12 +27,13 @@ async function poll() {
     await getData()
 }
 
-onMounted(() => getData())
-
+const load = getData()
 </script>
 
 <template>
-    <template v-for="step in steps" :key="step.stepid">
-        <StepListRow v-if="includeStep(step, props.filterSteps)" :step="step" />
-    </template>
+    <Loader :wait="load">
+        <template v-for="step in steps" :key="step.stepid">
+            <StepListRow v-if="includeStep(step, props.filterSteps)" :step="step" />
+        </template>
+    </Loader>
 </template>

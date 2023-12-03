@@ -1,5 +1,6 @@
 <script setup>
-import { inject, ref, onMounted } from 'vue'
+import { inject, ref } from 'vue'
+import Loader from '../components/Loader.vue'
 import * as data from '../data'
 const config = inject('config')
 
@@ -21,28 +22,30 @@ function getState(worker) {
     }
 }
 
-onMounted(() => getData())
+const load = getData()
 </script>
 
 <template>
-<table class="pure-table pure-table-horizntal pure-table-striped">
-<thead>
-    <tr>
-        <th>State</th>
-        <th>Name</th>
-        <th>Admin</th>
-        <th>Host</th>
-        <th>Version</th>
-    </tr>
-</thead>
-<tbody>
-    <tr v-for="worker in workers">
-        <td>{{ getState(worker) }}</td>
-        <td><router-link :to="{name: 'worker', params: {id: worker.workerid}}">{{ worker.name }}</router-link></td>
-        <td>{{ worker.workerinfo.admin }}</td>
-        <td>{{ worker.workerinfo.host }}</td>
-        <td>{{ worker.workerinfo.version }}</td>
-    </tr>
-</tbody>
-</table>
+<Loader :wait="load">
+    <table class="pure-table pure-table-horizntal pure-table-striped">
+    <thead>
+        <tr>
+            <th>State</th>
+            <th>Name</th>
+            <th>Admin</th>
+            <th>Host</th>
+            <th>Version</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr v-for="worker in workers">
+            <td>{{ getState(worker) }}</td>
+            <td><router-link :to="{name: 'worker', params: {id: worker.workerid}}">{{ worker.name }}</router-link></td>
+            <td>{{ worker.workerinfo.admin }}</td>
+            <td>{{ worker.workerinfo.host }}</td>
+            <td>{{ worker.workerinfo.version }}</td>
+        </tr>
+    </tbody>
+    </table>
+</Loader>
 </template>

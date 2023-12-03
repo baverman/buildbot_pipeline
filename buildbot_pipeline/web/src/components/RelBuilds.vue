@@ -1,6 +1,7 @@
 <script setup>
-import { inject, ref, onMounted, computed } from 'vue'
+import { inject, ref } from 'vue'
 import {getChangesBySSID, getRelatedBuilds, getBuilders, resultClass} from '../data'
+import Loader from './Loader.vue'
 
 const config = inject('config')
 const props = defineProps(['build', 'buildset'])
@@ -32,24 +33,26 @@ async function getData() {
     builds.value = b2b
 }
 
-onMounted(() => getData())
+const load = getData()
 </script>
 
 <template>
-    <table class="pure-table pure-table-horizntal pure-table-striped changes-history">
-        <tr v-for="builder in builders">
-            <td><router-link :to="{name: 'builder', params: {id: builder.builderid}}">{{ builder.name }}</router-link></td>
-            <td style="line-height: 1.3">
-                <template v-for="build in (builds.get(builder.builderid) || [])">
-                    <router-link
-                            :class="['badge', `${resultClass(build)}`, {'changes-current': build.current}]"
-                            :to="{name: 'build', params: {builderid: builder.builderid, number: build.number}}">
-                        {{ build.number }}
-                    </router-link>&hairsp;
-                </template>
-            </td>
-        </tr>
-    </table>
+    <Loader :wait="load">
+        <table class="pure-table pure-table-horizontal pure-table-striped changes-history">
+            <tr v-for="builder in builders">
+                <td><router-link :to="{name: 'builder', params: {id: builder.builderid}}">{{ builder.name }}</router-link></td>
+                <td style="line-height: 1.3">
+                    <template v-for="build in (builds.get(builder.builderid) || [])">
+                        <router-link
+                                :class="['badge', `${resultClass(build)}`, {'changes-current': build.current}]"
+                                :to="{name: 'build', params: {builderid: builder.builderid, number: build.number}}">
+                            {{ build.number }}
+                        </router-link>&hairsp;
+                    </template>
+                </td>
+            </tr>
+        </table>
+    </Loader>
 </template>
 
 <style>

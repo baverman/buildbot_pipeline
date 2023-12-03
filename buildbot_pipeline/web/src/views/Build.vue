@@ -1,11 +1,12 @@
 <script setup>
-import { inject, ref, onMounted } from 'vue'
+import { inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import StepList from '../components/StepList.vue'
 import Properties from '../components/Properties.vue'
 import Changes from '../components/Changes.vue'
 import RelBuilds from '../components/RelBuilds.vue'
+import Loader from '../components/Loader.vue'
 
 import {getBuildByNumber, getRequests, getBuildset, resultClass, resultTitle,
         getBuild, getBuilderName, getWorker, sendBuildAction, getBuildsByRequest} from '../data'
@@ -79,11 +80,11 @@ async function stop() {
     await sendBuildAction(config, build.value.buildid, 'stop')
 }
 
-onMounted(() => getData())
+const load = getData()
 </script>
 
 <template>
-    <template v-if="build">
+    <Loader :wait="load">
         <div class="vspacer">
             <div>
                 <span :class="`badge-text ${resultClass(build, true)}`">{{ resultTitle(build).toUpperCase() }}</span>
@@ -120,7 +121,7 @@ onMounted(() => getData())
             </KeepAlive>
             </div>
         </div>
-    </template>
+    </Loader>
 </template>
 
 <style scoped>

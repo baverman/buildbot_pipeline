@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import Breadcrumbs from './components/Breadcrumbs.vue'
 const route = useRoute()
