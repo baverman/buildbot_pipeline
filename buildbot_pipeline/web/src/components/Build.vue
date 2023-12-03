@@ -42,7 +42,9 @@ onMounted(() => getData())
             <span :class="`badge-text ${resultClass(props.build, true)}`">{{ resultTitle(props.build).toUpperCase() }}</span>
         </div>
     </div>
-    <StepList v-if="state" :build="props.build" :filter-steps="state" />
+    <KeepAlive>
+        <StepList v-if="state" :build="props.build" :filter-steps="state" />
+    </KeepAlive>
 </div>
 </template>
 

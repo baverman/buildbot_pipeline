@@ -1,6 +1,7 @@
 <script setup>
-import { inject, ref, onMounted } from 'vue'
+import { inject, ref, } from 'vue'
 import {getAllBuilders, getBuilderBuilds, resultClass} from '../data'
+import Loader from '../components/Loader.vue'
 const config = inject('config')
 
 async function getBuilders() {
@@ -30,23 +31,23 @@ async function getData() {
     builds.value = await getBuilds(lbuilders.map(it => it.builderid))
     builders.value = lbuilders
 }
-
-onMounted(() => getData())
 </script>
 
 <template>
-<table class="pure-table pure-table-horizntal pure-table-striped">
-    <tr v-for="builder in builders">
-        <td><router-link :to="{name: 'builder', params: {id: builder.builderid}}">{{ builder.name }}</router-link></td>
-        <td style="line-height: 1.5">
-            <template v-for="build in (builds.get(builder.builderid) || []).slice(0, 15)">
-                <router-link
-                        :class="`badge ${resultClass(build)}`"
-                        :to="{name: 'build', params: {builderid: builder.builderid, number: build.number}}">
-                    {{ build.number }}
-                </router-link>&hairsp;
-            </template>
-        </td>
-    </tr>
-</table>
+<Loader :wait="getData()">
+    <table class="pure-table pure-table-horizontal pure-table-striped">
+        <tr v-for="builder in builders">
+            <td><router-link :to="{name: 'builder', params: {id: builder.builderid}}">{{ builder.name }}</router-link></td>
+            <td style="line-height: 1.5">
+                <template v-for="build in (builds.get(builder.builderid) || []).slice(0, 15)">
+                    <router-link
+                            :class="`badge ${resultClass(build)}`"
+                            :to="{name: 'build', params: {builderid: builder.builderid, number: build.number}}">
+                        {{ build.number }}
+                    </router-link>&hairsp;
+                </template>
+            </td>
+        </tr>
+    </table>
+</Loader>
 </template>

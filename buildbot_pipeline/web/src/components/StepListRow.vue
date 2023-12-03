@@ -22,7 +22,9 @@ const details = ref(false)
             <div class="pure-u-2-3 right">{{ fmtDuration(props.step) }} {{ props.step.state_string }}</div>
         </div>
         <Activated :active="details">
-            <StepContent v-show="details" :step="props.step" />
+            <KeepAlive>
+                <StepContent v-if="details" :step="props.step" />
+            </KeepAlive>
         </Activated>
     </div>
 </template>

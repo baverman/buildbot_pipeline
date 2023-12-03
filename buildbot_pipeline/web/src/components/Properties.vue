@@ -1,6 +1,7 @@
 <script setup>
-import { inject, ref, onMounted, computed } from 'vue'
+import { inject, ref, computed } from 'vue'
 import {getBuildProperties} from '../data'
+import Loader from './Loader.vue'
 
 const config = inject('config')
 const props = defineProps(['build'])
@@ -19,27 +20,27 @@ function copy(event) {
     document.execCommand('copy')
     textArea.remove()
 }
-
-onMounted(() => getData())
 </script>
 
 <template>
-    <table class="pure-table pure-table-horizontal">
-        <thead>
-            <tr>
-                <td>Name</td>
-                <td>Value</td>
-                <td>Source</td>
-            </tr>
-        </thead>
-        <tbody>
-            <tr v-for="(value, name) in properties">
-                <td>{{ name }}</td>
-                <td><span class="properties-value">{{ value[0] }}</span> <i @click="copy" class="properties-copy fa fa-clone" aria-hidden="true"></i></td>
-                <td>{{ value[1]}}</td>
-            </tr>
-        </tbody>
-    </table>
+    <Loader :wait="getData()">
+        <table class="pure-table pure-table-horizontal">
+            <thead>
+                <tr>
+                    <td>Name</td>
+                    <td>Value</td>
+                    <td>Source</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(value, name) in properties">
+                    <td>{{ name }}</td>
+                    <td><span class="properties-value">{{ value[0] }}</span> <i @click="copy" class="properties-copy fa fa-clone" aria-hidden="true"></i></td>
+                    <td>{{ value[1]}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </Loader>
 </template>
 
 <style>
