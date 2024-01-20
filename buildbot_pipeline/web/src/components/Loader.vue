@@ -15,6 +15,6 @@ onMounted(wait)
 </script>
 
 <template>
-    <template v-if="!ready && show_fallback"><div>Loading...</div></template>
+    <template v-if="!ready && show_fallback"><div><span aria-busy="true">Loading...</span></div></template>
     <slot v-else-if="ready" />
 </template>

@@ -38,7 +38,7 @@ const load = getData()
 
 <template>
     <Loader :wait="load">
-        <table class="pure-table pure-table-horizontal pure-table-striped changes-history">
+        <table class="changes-history">
             <tr v-for="builder in builders">
                 <td><router-link :to="{name: 'builder', params: {id: builder.builderid}}">{{ builder.name }}</router-link></td>
                 <td style="line-height: 1.3">
@@ -62,5 +62,9 @@ const load = getData()
 
 .changes-history td {
     font-size: 90%;
+}
+
+.changes-history {
+    width: auto;
 }
 </style>

@@ -13,7 +13,11 @@ const route = useRoute()
 <style>
 body {
     padding: 0 1em 1em 1em;
-    color: #333;
+    /* color: #333; */
+}
+
+:root {
+    --form-element-spacing-vertical: 0.3rem;
 }
 
 .right {
@@ -135,7 +139,13 @@ body {
     width: 100%;
 }
 
-div {
+.w-inline {
+    display: inline-block;
+    width: auto;
+    margin: 0;
+}
+
+div.__comment {
     box-sizing: border-box;
     width: 100%;
     max-width: 100%;
@@ -152,12 +162,20 @@ div {
     margin-bottom: var(--spacer-gap, 0.6em);
 }
 
-a {
+a.__comment {
     color: #337ab7;
     text-decoration: none;
 }
 
 .nowrap {
     white-space: nowrap;
+}
+
+.cbox {
+    display: flex;
+}
+
+.cbox-push {
+    margin-left: auto;
 }
 </style>

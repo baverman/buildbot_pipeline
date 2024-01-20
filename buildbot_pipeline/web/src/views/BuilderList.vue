@@ -37,7 +37,7 @@ const load = getData()
 
 <template>
 <Loader :wait="load">
-    <table class="pure-table pure-table-horizontal pure-table-striped">
+    <table>
         <tr v-for="builder in builders">
             <td><router-link :to="{name: 'builder', params: {id: builder.builderid}}">{{ builder.name }}</router-link></td>
             <td style="line-height: 1.5">

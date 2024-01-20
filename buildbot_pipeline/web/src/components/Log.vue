@@ -11,16 +11,16 @@ const details = ref(false)
 
 <template>
     <div>
-        <div :class="{log: 1, 'w-100': 1, 'log-active': details, 'pure-g': 1}"
+        <div :class="{log: 1, 'w-100': 1, 'log-active': details, 'cbox': 1}"
                 @click="details = !details">
-            <div class="pure-u-4-5">
+            <div>
                 <ToggleArrow :active="details" />&nbsp;{{ props.log.name }}
             </div>
-            <div class="pure-u-1-5 right">
+            <div class="cbox-push">
                 <a @click.stop="" :href="config.backend + `/api/v2/logs/${props.log.logid}/raw?_download=0`" target="_blank">view</a>
                 <template v-if="props.log.type != 'h'">
                     &nbsp;
-                    <a @click.stop="" :href="config.backend + `/api/v2/logs/${props.log.logid}/raw`" class="pure-button log-button-small">
+                    <a @click.stop="" :href="config.backend + `/api/v2/logs/${props.log.logid}/raw`" class="log-button-small">
                         <i class="fa fa-download" aria-hidden="true"></i>&nbsp;download
                     </a>
                 </template>
@@ -53,5 +53,6 @@ const details = ref(false)
     min-width: 4em;
     background-color: #fff;
     border: 1px solid #ccc;
+    text-decoration: none;
 }
 </style>

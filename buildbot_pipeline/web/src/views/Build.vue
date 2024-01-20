@@ -92,26 +92,26 @@ const load = getData()
                 <template v-if="parent_build">
                     Parent: <router-link :to="buildLink(parent_build)">{{ parent_build.builder_name }}/{{ parent_build.number }}</router-link>
                 </template><!--
-                -->&nbsp;<button v-if="build.results != null" @click="rebuild">Rebuild</button>
-                <button v-else @click="stop">Stop</button>
+                -->&nbsp;&nbsp;<button v-if="build.results != null" class="w-inline" @click="rebuild">Rebuild</button>
+                <button v-else class="w-inline" @click="stop">Stop</button>
             </div>
             <div>{{ build.state_string }}</div>
-            <div class="pure-menu pure-menu-horizontal">
-                <ul class="pure-menu-list">
-                    <li :class="{'pure-menu-item': true, 'pure-menu-selected': tab == 'steps'}">
-                        <a @click="changeTab('steps')" class="pure-menu-link">Steps</a>
+            <nav class="tab">
+                <ul>
+                    <li :class="{'active': tab == 'steps'}">
+                        <a @click="changeTab('steps')" class="contrast">Steps</a>
                     </li>
-                    <li :class="{'pure-menu-item': true, 'pure-menu-selected': tab == 'props'}">
-                        <a @click="changeTab('props')" class="pure-menu-link">Properties</a>
+                    <li :class="{'active': tab == 'props'}">
+                        <a @click="changeTab('props')" class="contrast">Properties</a>
                     </li>
-                    <li :class="{'pure-menu-item': true, 'pure-menu-selected': tab == 'changes'}">
-                        <a @click="changeTab('changes')" class="pure-menu-link">Changes</a>
+                    <li :class="{'active': tab == 'changes'}">
+                        <a @click="changeTab('changes')" class="contrast">Changes</a>
                     </li>
-                    <li :class="{'pure-menu-item': true, 'pure-menu-selected': tab == 'relbuilds'}">
-                        <a @click="changeTab('relbuilds')" class="pure-menu-link">Related builds</a>
+                    <li :class="{'active': tab == 'relbuilds'}">
+                        <a @click="changeTab('relbuilds')" class="contrast">Related builds</a>
                     </li>
                 </ul>
-            </div>
+            </nav>
             <div>
             <KeepAlive>
                 <StepList v-if="tab == 'steps'" :build="build" :filter-steps="2" />
@@ -125,13 +125,20 @@ const load = getData()
 </template>
 
 <style scoped>
-.pure-menu-selected .pure-menu-link {
-    border-bottom: 3px gray solid;
-}
-
-.pure-menu-link {
+nav.tab a {
+    --nav-link-spacing-vertical: 0.2rem;
+    border-radius: 0;
     cursor: pointer;
     border-bottom: 3px transparent solid;
+}
+
+nav.tab li.active a {
+    border-bottom: 3px gray solid;
+    font-weight: bolder;
+}
+
+nav.tab li {
+    --nav-element-spacing-vertical: 0.5rem;
 }
 
 </style>

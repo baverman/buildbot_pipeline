@@ -32,12 +32,12 @@ onMounted(() => getData())
 
 <template>
 <div>
-    <div class="pure-g nested-build-row">
-        <div class="pure-u-2-5">
-            <span class="pure-button nested-build-state" @click="nextState" v-html="state_labels[state]" />&nbsp;
+    <div class="cbox nested-build-row">
+        <div>
+            <span class="nested-build-state" @click="nextState" v-html="state_labels[state]" />&nbsp;
             <router-link :to="{name: 'build', params: {builderid: props.build.builderid, number: props.build.number}}">{{ builder_name }}/{{ props.build.number }}</router-link>
         </div>
-        <div class="pure-u-3-5 right nested-build-status">
+        <div class="cbox-push nested-build-status">
             {{ fmtDuration(props.build) }} {{ props.build.state_string }}
             <span :class="`badge-text ${resultClass(props.build, true)}`">{{ resultTitle(props.build).toUpperCase() }}</span>
         </div>
@@ -56,6 +56,7 @@ onMounted(() => getData())
     min-width: 4em;
     background-color: #fff;
     border: 1px solid #ccc;
+    cursor: pointer;
 }
 
 .nested-build-row {

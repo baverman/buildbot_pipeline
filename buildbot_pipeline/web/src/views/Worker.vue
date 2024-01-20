@@ -23,12 +23,12 @@ const load = getData()
 
 <template>
     <Loader :wait="load">
-        <p>
+        <div class="content">
             <textarea v-model="reason" placeholder="Reason" rows=10 cols=60 />
-        </p>
-        <button @click="action('stop')" :disabled="!worker.connected_to.length">Shutdown</button>&nbsp;
-        <button @click="action('kill')" :disabled="!worker.connected_to.length">Force shutdown</button>&nbsp;
-        <button @click="action('pause')" :disabled="worker.paused">Pause</button>&nbsp;
-        <button @click="action('unpause')" :disabled="!worker.paused">Unpause</button>
+            <button class="w-inline" @click="action('stop')" :disabled="!worker.connected_to.length">Shutdown</button>&nbsp;
+            <button class="w-inline" @click="action('kill')" :disabled="!worker.connected_to.length">Force shutdown</button>&nbsp;
+            <button class="w-inline" @click="action('pause')" :disabled="worker.paused">Pause</button>&nbsp;
+            <button class="w-inline" @click="action('unpause')" :disabled="!worker.paused">Unpause</button>
+        </div>
     </Loader>
 </template>

@@ -28,7 +28,7 @@ const load = getData()
 
 <template>
 <Loader :wait="load">
-    <table class="pure-table pure-table-striped">
+    <table>
     <thead>
         <tr>
             <th>#</th>
@@ -56,7 +56,6 @@ const load = getData()
         </tr>
     </tbody>
     </table>
-    <br>
-    <span class="pure-button" @click="loadMore">More...</span>
+    <span class="secondary" role="button" @click="loadMore">More...</span>
 </Loader>
 </template>

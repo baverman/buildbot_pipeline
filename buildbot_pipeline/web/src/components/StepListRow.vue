@@ -13,13 +13,13 @@ const details = ref(false)
 
 <template>
     <div class="step-row vspacer">
-        <div class="pure-g" @click.stop.prevent="details = !details">
-            <div class="pure-u-1-3">
+        <div class="cbox" @click.stop.prevent="details = !details">
+            <div>
                 <span :class="`badge ${resultClass(props.step)}`">{{ props.step.number}}</span>&hairsp;
                 <ToggleArrow :active="details" />
                 {{ props.step.name }}
             </div>
-            <div class="pure-u-2-3 right">{{ fmtDuration(props.step) }} {{ props.step.state_string }}</div>
+            <div class="cbox-push">{{ fmtDuration(props.step) }} {{ props.step.state_string }}</div>
         </div>
         <Activated :active="details">
             <KeepAlive>

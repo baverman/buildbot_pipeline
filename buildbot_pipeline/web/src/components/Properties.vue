@@ -26,7 +26,7 @@ const load = getData()
 
 <template>
     <Loader :wait="load">
-        <table class="pure-table pure-table-horizontal">
+        <table>
             <thead>
                 <tr>
                     <td>Name</td>
