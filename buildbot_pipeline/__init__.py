@@ -1,3 +1,4 @@
+import os
 import itertools
 from buildbot.plugins import util as _
 
@@ -83,3 +84,7 @@ def init_pipeline(master_config, builders=10, inner_builders=30,
         factory=factory))
 
     master_config['schedulers'].append(Triggerable('trig-prop-builder', builder_names))
+
+    if os.environ.get('MEMMON'):
+        from . import memmon
+        memmon.monitor(os.environ['MEMMON'], in_thread=True)
