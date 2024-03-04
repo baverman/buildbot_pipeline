@@ -69,6 +69,10 @@ def gen_steps(step, data):
         data['shell'] = data.pop('shell-fail')
         data['haltOnFailure'] = True
 
+    if 'shell-always' in data:
+        data['shell'] = data.pop('shell-always')
+        data['alwaysRun'] = True
+
     if 'pmatrix' in data:
         data = {'parallel': {'matrix': data.pop('pmatrix')}}
 
