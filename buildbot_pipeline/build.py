@@ -1,5 +1,7 @@
+import json
 from functools import lru_cache
 
+import sqlalchemy as sa
 from twisted.internet import defer
 
 from buildbot.process.build import Build
@@ -134,6 +136,18 @@ def get_child_builds(master, bpath, builderid=None, success=None):
     return master.db.pool.do(thd)
 
 
+def get_session_props(master, buildid, builderid):
+    def thd(conn):
+        bd = master.db.model.build_data
+        prefix = f'prop:{builderid}:'
+        q = (sa.select([bd.c.name, bd.c.value])
+             .where(bd.c.name.like(prefix+'%'), bd.c.buildid == buildid))
+        result = {name[len(prefix):]: json.loads(value.decode())
+                  for name, value in conn.execute(q)}
+        return result
+    return master.db.pool.do(thd)
+
+
 def get_project_from_url(url):
     return (url.rpartition('/')[2] or 'unknown').strip('/')
 
@@ -203,6 +217,25 @@ class PipelineBuild(Build):
             bpath.append(parent_buildid)
             self.buildbot_pipeline_bpath = bpath
             yield set_bpath(self.master, self.buildid, bpath)
+            yield self.populateSessionProperties()
+
+    @defer.inlineCallbacks
+    def setSessionProperty(self, name, value, source='Build'):
+        if not self.buildbot_pipeline_bpath:
+            return
+
+        builderid = yield self.getBuilderId()
+        buildid = self.buildbot_pipeline_bpath[0]
+        prop = f'prop:{builderid}:{name}'
+        yield self.master.data.updates.setBuildData(buildid, prop, json.dumps(value).encode(), source)
+
+    @defer.inlineCallbacks
+    def populateSessionProperties(self):
+        builderid = yield self.getBuilderId()
+        buildid = self.buildbot_pipeline_bpath[0]
+        props = yield get_session_props(self.master, buildid, builderid)
+        for name, value in props.items():
+            yield self.setProperty(name, value, 'Build')
 
     @defer.inlineCallbacks
     def get_last_successful_build(self):

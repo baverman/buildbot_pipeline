@@ -489,6 +489,12 @@ class DynamicStep(buildstep.ShellMixin, buildstep.BuildStep):
             name, value = data.split(None, 1)
             yield name, value
 
+    def extract_session_props(self, stdout):
+        r = '(?m)__PIPELINE_' + r'SESSION_PROP__\s+(.+)$'
+        for data in re.findall(r, stdout):
+            name, value = data.split(None, 1)
+            yield name, value
+
     def extract_links(self, stdout):
         r = '(?m)__PIPELINE_' + r'LINK__\s+(.+)$'
         for data in re.findall(r, stdout):
@@ -509,7 +515,11 @@ class DynamicStep(buildstep.ShellMixin, buildstep.BuildStep):
             yield self.addURL(name, url)
 
         for name, value in self.extract_props(stdout):
-            yield self.setProperty(name, value, 'Step')
+            yield self.setProperty(name, value, 'Build')
+
+        for name, value in self.extract_session_props(stdout):
+            yield self.setProperty(name, value, 'Build')
+            yield self.build.setSessionProperty(name, value, 'Build')
 
         if self.junit:
             for desc in utils.ensure_list(self.junit):

@@ -66,6 +66,8 @@ information.
 * `__PIPELINE_LINK__ name url`: adds a user provided link to a current step.
 * `__PIPELINE_PROP__ name value`: adds a user provided property to a current build.
   You can access property value in following steps.
+* `__PIPELINE_SESSION_PROP__ name value`: adds a user provided property to
+  a current build and future rebuilds.
 
 For example:
 
