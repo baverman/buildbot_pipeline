@@ -1,47 +1,59 @@
-<script setup>
+<script setup lang="ts">
 import { inject, ref, onMounted, nextTick } from 'vue'
-import {getLogContent} from '../data'
+import { getLogContent, type Config } from '../api'
+import { type Log } from '../types'
 
-const config = inject('config')
-const props = defineProps(['log'])
-const content = ref([])
-const el = ref(null)
+const config = inject('config') as Config
+const props = defineProps<{ log: Log }>()
+const hcontent = ref('')
+const content = ref<[string, string][]>([])
+const el = ref<HTMLPreElement | null>(null)
 
 async function getData() {
     const log = props.log
     if (log.type == 'h') {
         const chunks = await getLogContent(config, log.logid)
-        const result = chunks.map(it => it.content)
-        content.value = result.join('')
+        const result = chunks.map((it) => it.content)
+        hcontent.value = result.join('')
         return
     }
-    const chunks = await getLogContent(config, log.logid, Math.max(0, log.num_lines-config.log_limit), config.log_limit)
-    const result = []
+    const chunks = await getLogContent(
+        config,
+        log.logid,
+        Math.max(0, log.num_lines - config.log_limit),
+        config.log_limit,
+    )
+    const result: [string, string][] = []
     const ws = /\r?\n/
-    for (var it of chunks) {
-        for (var line of it.content.split(ws)) {
+    for (const it of chunks) {
+        for (const line of it.content.split(ws)) {
             if (log.type == 's') {
-                result.push([line[0], line.slice(1) + '\n'])
+                if (line.length) {
+                    result.push([line[0], line.slice(1) + '\n'])
+                }
             } else {
                 result.push(['o', line + '\n'])
             }
         }
     }
-    if (result.length) {
-        result[result.length-1] = result[result.length-1].slice(0, -1)
-    }
     content.value = result
 
     await nextTick()
-    el.value.scrollTop = el.value.scrollHeight
+    if (el.value) {
+        el.value.scrollTop = el.value.scrollHeight
+    }
 }
 
 onMounted(() => getData())
 </script>
 
 <template>
-    <div class="log-content" v-if="props.log.type == 'h'" v-html="content" />
-    <pre v-else class="log-content" ref="el"><template v-for="line in content"><span :class="`line-${line[0]}`">{{ line[1] }}</span></template></pre>
+    <div class="log-content" v-if="props.log.type == 'h'" v-html="hcontent" />
+    <pre
+        v-else
+        class="log-content"
+        ref="el"
+    ><template v-for="(line, index) in content" :key="index"><span :class="`line-${line[0]}`">{{ line[1] }}</span></template></pre>
 </template>
 
 <style>

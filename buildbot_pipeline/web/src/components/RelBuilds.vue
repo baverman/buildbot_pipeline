@@ -1,26 +1,28 @@
-<script setup>
+<script setup lang="ts">
 import { inject, ref } from 'vue'
-import {getChangesBySSID, getRelatedBuilds, getBuilders, resultClass} from '../data'
+import { getRelatedBuilds, getBuilders, type Config } from '../api'
+import { resultClass } from '../utils'
+import { type Build, type Builder } from '../types'
 import Loader from './Loader.vue'
 
-const config = inject('config')
-const props = defineProps(['build', 'buildset'])
+const config = inject('config') as Config
+const props = defineProps<{ build: Build }>()
 const build = props.build
-const buildset = props.buildset
-const builders = ref([])
-const builds = ref(new Map())
+const builders = ref<Builder[]>([])
+const builds = ref(new Map<number, Build[]>())
 
-function showBuilder(it) {
-    return it.builderid == build.builderid || it.masterids.length || (~it.tags.indexOf('_virtual_') && !~it.tags.indexOf('hidden'))
+function showBuilder(it: Builder) {
+    return (
+        it.builderid == build.builderid ||
+        it.masterids.length ||
+        (~it.tags.indexOf('_virtual_') && !~it.tags.indexOf('hidden'))
+    )
 }
 
 async function getData() {
     const cbuilds = await getRelatedBuilds(config, build.buildid)
     const b2b = new Map()
-    for (var b of cbuilds) {
-        if (b.buildid == build.buildid) {
-            b.current = true
-        }
+    for (const b of cbuilds) {
         const k = b.builderid
         if (b2b.has(k)) {
             b2b.get(k).push(b)
@@ -39,15 +41,27 @@ const load = getData()
 <template>
     <Loader :wait="load">
         <table class="changes-history">
-            <tr v-for="builder in builders">
-                <td><router-link :to="{name: 'builder', params: {id: builder.builderid}}">{{ builder.name }}</router-link></td>
+            <tr v-for="builder in builders" :key="builder.builderid">
+                <td>
+                    <router-link :to="{ name: 'builder', params: { id: builder.builderid } }">{{
+                        builder.name
+                    }}</router-link>
+                </td>
                 <td style="line-height: 1.3">
-                    <template v-for="build in (builds.get(builder.builderid) || [])">
+                    <template v-for="it in builds.get(builder.builderid) || []" :key="it.buildid">
                         <router-link
-                                :class="['badge', `${resultClass(build)}`, {'changes-current': build.current}]"
-                                :to="{name: 'build', params: {builderid: builder.builderid, number: build.number}}">
-                            {{ build.number }}
-                        </router-link>&hairsp;
+                            :class="[
+                                'badge',
+                                `${resultClass(it)}`,
+                                { 'changes-current': it.buildid == build.buildid },
+                            ]"
+                            :to="{
+                                name: 'build',
+                                params: { builderid: builder.builderid, number: it.number },
+                            }"
+                        >
+                            {{ it.number }} </router-link
+                        >&hairsp;
                     </template>
                 </td>
             </tr>

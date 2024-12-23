@@ -1,13 +1,12 @@
-<script setup>
-import { inject, ref } from 'vue'
+<script setup lang="ts">
+import { ref } from 'vue'
 import ToggleArrow from './ToggleArrow.vue'
 import StepContent from './StepContent.vue'
 import Activated from './Activated.vue'
-import {fmtDuration} from '../utils'
-import {resultClass} from '../data'
+import { fmtDuration, resultClass } from '../utils'
+import { type Step } from '../types'
 
-const config = inject('config')
-const props = defineProps(['step'])
+const props = defineProps<{ step: Step }>()
 const details = ref(false)
 </script>
 
@@ -15,7 +14,8 @@ const details = ref(false)
     <div class="step-row vspacer">
         <div class="cbox" @click.stop.prevent="details = !details">
             <div>
-                <span :class="`badge ${resultClass(props.step)}`">{{ props.step.number}}</span>&hairsp;
+                <span :class="`badge ${resultClass(props.step)}`">{{ props.step.number }}</span
+                >&hairsp;
                 <ToggleArrow :active="details" />
                 {{ props.step.name }}
             </div>
@@ -39,5 +39,4 @@ const details = ref(false)
 .step-row:last-child {
     border: 1px solid lightgrey;
 }
-
 </style>

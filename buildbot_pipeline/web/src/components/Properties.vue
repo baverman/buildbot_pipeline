@@ -1,20 +1,21 @@
-<script setup>
-import { inject, ref, computed } from 'vue'
-import {getBuildProperties} from '../data'
+<script setup lang="ts">
+import { inject, ref } from 'vue'
+import { getBuildProperties, type Config } from '../api'
+import { type Build, type Properties } from '../types'
 import Loader from './Loader.vue'
 
-const config = inject('config')
-const props = defineProps(['build'])
-const properties = ref({})
+const config = inject('config') as Config
+const props = defineProps<{ build: Build }>()
+const properties = ref<Properties>({})
 
 async function getData() {
     properties.value = await getBuildProperties(config, props.build.buildid)
 }
 
-function copy(event) {
-    const el = event.target.previousElementSibling
-    const textArea = document.createElement("textarea")
-    textArea.value = el.textContent
+function copy(event: Event) {
+    const el = (event.target as HTMLSpanElement).previousElementSibling!
+    const textArea = document.createElement('textarea')
+    textArea.value = el.textContent ?? ''
     document.body.appendChild(textArea)
     textArea.select()
     document.execCommand('copy')
@@ -35,10 +36,13 @@ const load = getData()
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(value, name) in properties">
+                <tr v-for="(value, name) in properties" :key="name">
                     <td>{{ name }}</td>
-                    <td><span class="properties-value">{{ value[0] }}</span> <i @click="copy" class="properties-copy fa fa-clone" aria-hidden="true"></i></td>
-                    <td>{{ value[1]}}</td>
+                    <td>
+                        <span class="properties-value">{{ value[0] }}</span>
+                        <i @click="copy" class="properties-copy fa fa-clone" aria-hidden="true"></i>
+                    </td>
+                    <td>{{ value[1] }}</td>
                 </tr>
             </tbody>
         </table>

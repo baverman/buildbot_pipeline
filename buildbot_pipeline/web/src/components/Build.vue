@@ -1,18 +1,19 @@
-<script setup>
-import { inject, ref, onMounted, computed } from 'vue'
-import {getBuilderNames, getBuildSteps, resultClass, resultTitle} from '../data'
-import {fmtDuration} from '../utils'
+<script setup lang="ts">
+import { inject, ref, onMounted } from 'vue'
+import { getBuilderNames, type Config } from '../api'
+import { resultClass, resultTitle, fmtDuration } from '../utils'
+import { type Build } from '../types'
 import StepList from './StepList.vue'
 
-const config = inject('config')
-const props = defineProps(['build'])
+const config = inject('config') as Config
+const props = defineProps<{ build: Build }>()
 
-const builder_name = ref(null)
-const state = ref(0)  // 0 - folded, 1 - problems, 2 - all
+const builder_name = ref<string | null>(null)
+const state = ref(0) // 0 - folded, 1 - problems, 2 - all
 const state_labels = [
     '<i class="fa fa-expand" aria-hidden="true"></i>&nbsp;None',
     '<i class="fa fa-expand" aria-hidden="true"></i>&nbsp;Problems',
-    '<i class="fa fa-compress" aria-hidden="true"></i>&nbsp;All'
+    '<i class="fa fa-compress" aria-hidden="true"></i>&nbsp;All',
 ]
 
 function nextState() {
@@ -23,7 +24,9 @@ async function getData() {
     if (props.build.properties.virtual_builder_title) {
         builder_name.value = props.build.properties.virtual_builder_title[0]
     } else {
-        builder_name.value = (await getBuilderNames(config, [props.build.builderid])).get(props.build.builderid)
+        builder_name.value =
+            (await getBuilderNames(config, [props.build.builderid])).get(props.build.builderid) ??
+            'unknown'
     }
 }
 
@@ -31,21 +34,33 @@ onMounted(() => getData())
 </script>
 
 <template>
-<div>
-    <div class="cbox nested-build-row">
-        <div>
-            <span class="nested-build-state" @click="nextState" v-html="state_labels[state]" />&nbsp;
-            <router-link :to="{name: 'build', params: {builderid: props.build.builderid, number: props.build.number}}">{{ builder_name }}/{{ props.build.number }}</router-link>
+    <div>
+        <div class="cbox nested-build-row">
+            <div>
+                <span
+                    class="nested-build-state"
+                    @click="nextState"
+                    v-html="state_labels[state]"
+                />&nbsp;
+                <router-link
+                    :to="{
+                        name: 'build',
+                        params: { builderid: props.build.builderid, number: props.build.number },
+                    }"
+                    >{{ builder_name }}/{{ props.build.number }}</router-link
+                >
+            </div>
+            <div class="cbox-push nested-build-status">
+                {{ fmtDuration(props.build) }} {{ props.build.state_string }}
+                <span :class="`badge-text ${resultClass(props.build, true)}`">{{
+                    resultTitle(props.build).toUpperCase()
+                }}</span>
+            </div>
         </div>
-        <div class="cbox-push nested-build-status">
-            {{ fmtDuration(props.build) }} {{ props.build.state_string }}
-            <span :class="`badge-text ${resultClass(props.build, true)}`">{{ resultTitle(props.build).toUpperCase() }}</span>
-        </div>
+        <KeepAlive>
+            <StepList v-if="state" :build="props.build" :filter-steps="state" />
+        </KeepAlive>
     </div>
-    <KeepAlive>
-        <StepList v-if="state" :build="props.build" :filter-steps="state" />
-    </KeepAlive>
-</div>
 </template>
 
 <style>

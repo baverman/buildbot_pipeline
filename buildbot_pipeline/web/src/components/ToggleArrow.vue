@@ -1,8 +1,7 @@
-<script setup>
-import { ref } from 'vue'
-const props = defineProps(['active'])
+<script setup lang="ts">
+const props = defineProps<{ active: boolean }>()
 </script>
 
 <template>
-    <i :class="`fa fa-arrow-circle-${active ? 'down' : 'right'}`"></i>
+    <i :class="`fa fa-arrow-circle-${props.active ? 'down' : 'right'}`"></i>
 </template>

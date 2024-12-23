@@ -1,16 +1,18 @@
-<script setup>
+<script setup lang="ts">
 import { inject, ref } from 'vue'
 import Loader from '../components/Loader.vue'
-import * as data from '../data'
-const config = inject('config')
+import * as api from '../api'
+import { type Worker } from '../types'
 
-const workers = ref(null)
+const config = inject('config') as api.Config
+
+const workers = ref<Worker[] | null>(null)
 
 async function getData() {
-    workers.value = await data.getWorkers(config)
+    workers.value = await api.getWorkers(config)
 }
 
-function getState(worker) {
+function getState(worker: Worker): string {
     if (worker.connected_to.length) {
         if (worker.paused) {
             return 'paused'
@@ -26,26 +28,30 @@ const load = getData()
 </script>
 
 <template>
-<Loader :wait="load">
-    <table>
-    <thead>
-        <tr>
-            <th>State</th>
-            <th>Name</th>
-            <th>Admin</th>
-            <th>Host</th>
-            <th>Version</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr v-for="worker in workers">
-            <td>{{ getState(worker) }}</td>
-            <td><router-link :to="{name: 'worker', params: {id: worker.workerid}}">{{ worker.name }}</router-link></td>
-            <td>{{ worker.workerinfo.admin }}</td>
-            <td>{{ worker.workerinfo.host }}</td>
-            <td>{{ worker.workerinfo.version }}</td>
-        </tr>
-    </tbody>
-    </table>
-</Loader>
+    <Loader :wait="load">
+        <table>
+            <thead>
+                <tr>
+                    <th>State</th>
+                    <th>Name</th>
+                    <th>Admin</th>
+                    <th>Host</th>
+                    <th>Version</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="worker in workers" :key="worker.workerid">
+                    <td>{{ getState(worker) }}</td>
+                    <td>
+                        <router-link :to="{ name: 'worker', params: { id: worker.workerid } }">{{
+                            worker.name
+                        }}</router-link>
+                    </td>
+                    <td>{{ worker.workerinfo.admin }}</td>
+                    <td>{{ worker.workerinfo.host }}</td>
+                    <td>{{ worker.workerinfo.version }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </Loader>
 </template>

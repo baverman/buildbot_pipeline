@@ -1,13 +1,12 @@
-<script setup>
-import { ref } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+<script setup lang="ts">
+import { RouterView, useRoute } from 'vue-router'
 import Breadcrumbs from './components/Breadcrumbs.vue'
 const route = useRoute()
 </script>
 
 <template>
-  <Breadcrumbs />
-  <router-view :key="route.path" />
+    <Breadcrumbs />
+    <router-view :key="route.path" />
 </template>
 
 <style>
@@ -27,97 +26,97 @@ body {
 .results_0 {
     color: #000;
     background-color: #8d4;
-    border-color: #4F8530;
+    border-color: #4f8530;
 }
 
 .results_1 {
-    color: #FFFFFF;
+    color: #ffffff;
     background-color: #fa3;
-    border-color: #C29D46;
+    border-color: #c29d46;
 }
 
 .results_2 {
     color: #000;
     background-color: #e88;
-    border-color: #A77272;
+    border-color: #a77272;
 }
 
 .results_3 {
     color: #000;
-    background: #AADDEE;
-    border-color: #AADDEE;
+    background: #aaddee;
+    border-color: #aaddee;
 }
 
 .results_4 {
-    color: #FFFFFF;
+    color: #ffffff;
     background-color: #c6c;
-    border-color: #ACA0B3;
+    border-color: #aca0b3;
 }
 
 .results_5 {
     color: #000;
     background-color: #ecc;
-    border-color: #ACA0B3;
+    border-color: #aca0b3;
 }
 
 .results_6 {
     color: #000;
     background-color: #ecc;
-    border-color: #ACA0B3;
+    border-color: #aca0b3;
 }
 
 .results_7 {
     color: #000;
-    background-color: #E7D100;
-    border-color: #ACA0B3;
+    background-color: #e7d100;
+    border-color: #aca0b3;
 }
 
 .results_99 {
-  color: #000;
-  background-color: #E7D100;
-  border-color: #ACA0B3;
+    color: #000;
+    background-color: #e7d100;
+    border-color: #aca0b3;
 }
 
 .pulse {
-  -webkit-animation: pulse_animation 1s linear infinite;
-  animation: pulse_animation 1s linear infinite;
-  transform-origin: 70% 70%;
-  display: inline-block;
+    -webkit-animation: pulse_animation 1s linear infinite;
+    animation: pulse_animation 1s linear infinite;
+    transform-origin: 70% 70%;
+    display: inline-block;
 }
 
 @keyframes pulse_animation {
-  0% {
-    transform: scale(0.9);
-    -webkit-transform: scale(0.9);
-  }
-  30% {
-    transform: scale(0.9);
-    -webkit-transform: scale(0.9);
-  }
-  40% {
-    transform: scale(1.08);
-    -webkit-transform: scale(1.08);
-  }
-  50% {
-    transform: scale(0.9);
-    -webkit-transform: scale(0.9);
-  }
-  60% {
-    transform: scale(0.9);
-    -webkit-transform: scale(0.9);
-  }
-  70% {
-    transform: scale(1.05);
-    -webkit-transform: scale(1.05);
-  }
-  80% {
-    transform: scale(0.9);
-    -webkit-transform: scale(0.9);
-  }
-  100% {
-    transform: scale(0.9);
-    -webkit-transform: scale(0.9);
-  }
+    0% {
+        transform: scale(0.9);
+        -webkit-transform: scale(0.9);
+    }
+    30% {
+        transform: scale(0.9);
+        -webkit-transform: scale(0.9);
+    }
+    40% {
+        transform: scale(1.08);
+        -webkit-transform: scale(1.08);
+    }
+    50% {
+        transform: scale(0.9);
+        -webkit-transform: scale(0.9);
+    }
+    60% {
+        transform: scale(0.9);
+        -webkit-transform: scale(0.9);
+    }
+    70% {
+        transform: scale(1.05);
+        -webkit-transform: scale(1.05);
+    }
+    80% {
+        transform: scale(0.9);
+        -webkit-transform: scale(0.9);
+    }
+    100% {
+        transform: scale(0.9);
+        -webkit-transform: scale(0.9);
+    }
 }
 
 .badge {
