@@ -1,16 +1,18 @@
-<script setup>
+<script setup lang="ts">
 import { inject, ref } from 'vue'
 import Loader from '../components/Loader.vue'
-import * as data from '../data'
-const config = inject('config')
+import * as api from '../api'
+import { type Worker } from '../types'
 
-const workers = ref(null)
+const config = inject('config') as api.Config
+
+const workers = ref<Worker[] | null>(null)
 
 async function getData() {
-    workers.value = await data.getWorkers(config)
+    workers.value = await api.getWorkers(config)
 }
 
-function getState(worker) {
+function getState(worker: Worker): string {
     if (worker.connected_to.length) {
         if (worker.paused) {
             return 'paused'

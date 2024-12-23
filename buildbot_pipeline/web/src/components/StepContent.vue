@@ -1,22 +1,24 @@
-<script setup>
+<script setup lang="ts">
 import { inject, ref } from 'vue'
-import {getStepLogs, parseStepUrls, getBuildsByNumber, getRequests, getBuilderNames, getBuildsByRequest} from '../data'
+import * as api from '../api'
 import Log from './Log.vue'
 import Build from './Build.vue'
 import Loader from './Loader.vue'
+import {parseStepUrls, type RequestUrl, type BuildUrl} from '../utils'
+import {type Log as LogT, type StepUrl, type Build as BuildT} from '../types'
 
-const config = inject('config')
+const config = inject('config') as api.Config
 const props = defineProps(['step'])
-const logs = ref([])
+const logs = ref<LogT[]>([])
 
-const data_builds = ref([])
-const data_requests = ref([])
-const request_urls = ref([])
-const builds = ref([])
-const other_urls = ref([])
+const data_builds = ref<BuildUrl[]>([])
+const data_requests = ref<RequestUrl[]>([])
+const request_urls = ref<RequestUrl[]>([])
+const builds = ref<BuildT[]>([])
+const other_urls = ref<StepUrl[]>([])
 
 async function getData() {
-    logs.value = await getStepLogs(config, props.step.stepid)
+    logs.value = await api.getStepLogs(config, props.step.stepid)
     const data = parseStepUrls(props.step.urls)
     data_builds.value = data.builds
     data_requests.value = data.requests
@@ -24,13 +26,13 @@ async function getData() {
     await poll()
 }
 
-function hasUncompletedBuilds(builds) {
+function hasUncompletedBuilds(builds: BuildT[]) {
     return builds.length && builds.filter(it => it.results == null).length
 }
 
 async function poll() {
-    await getBuilderNames(config, data_builds.value.map(it => it.builderid))
-    builds.value = await getBuildsByRequest(config, data_requests.value.map(it => it.reqid),
+    await api.getBuilderNames(config, data_builds.value.map(it => it.builderid))
+    builds.value = await api.getBuildsByRequest(config, data_requests.value.map(it => it.reqid),
                                             {'properties': ['virtual_builder_title']})
     const claimed_requests = new Map(builds.value.map(it => [it.buildrequestid, 1]))
     request_urls.value = data_requests.value.filter(it => !claimed_requests.has(it.reqid))

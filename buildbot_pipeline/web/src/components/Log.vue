@@ -1,11 +1,13 @@
-<script setup>
+<script setup lang="ts">
 import { inject, ref, onMounted } from 'vue'
 import ToggleArrow from './ToggleArrow.vue'
 import Activated from './Activated.vue'
 import LogContent from './LogContent.vue'
+import {type Config} from '../api'
+import {type Log} from '../types'
 
-const config = inject('config')
-const props = defineProps(['log'])
+const config = inject('config') as Config
+const props = defineProps<{log: Log}>()
 const details = ref(false)
 </script>
 

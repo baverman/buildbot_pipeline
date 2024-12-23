@@ -1,12 +1,13 @@
-<script setup>
+<script setup lang="ts">
 import { inject, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import Loader from '../components/Loader.vue'
-import {fetchData, resultClass} from '../data'
-import {fmtDuration, fmtAge} from '../utils'
+import {fetchData, type Config} from '../api'
+import {fmtDuration, fmtAge, resultClass} from '../utils'
+import {type Build} from '../types'
 
-const config = inject('config')
-const builds = ref([])
+const config = inject('config') as Config
+const builds = ref<Build[]>([])
 const props = defineProps(['id'])
 
 async function getData() {
