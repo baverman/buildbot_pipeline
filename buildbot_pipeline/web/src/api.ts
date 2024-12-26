@@ -13,6 +13,8 @@ import {
 
 const builderNameCache = new Map<number, string>()
 
+export class AppError extends Error {}
+
 export interface Config {
     backend: string
     log_limit: number
@@ -50,7 +52,7 @@ export async function getWorkers(config: Config): Promise<Worker[]> {
 }
 
 export async function getWorker(config: Config, id: number): Promise<Worker | null> {
-    return (await fetchData(config, `/api/v2/workers/${id}`))?.workers[0]
+    return (await fetchData(config, `/api/v2/workers/${id}`))?.workers?.[0] ?? null
 }
 
 export async function getAllBuilders(config: Config): Promise<Builder[]> {
@@ -177,13 +179,17 @@ export async function getRelatedBuilds(config: Config, buildid: number): Promise
     return (await fetchData(config, url)).builds || []
 }
 
+export async function getBuild(config: Config, id: number): Promise<Build | null> {
+    return (await fetchData(config, `/api/v2/builds/${id}`)).builds[0] || null
+}
+
 export async function getBuildByNumber(
     config: Config,
     builderid: number,
     number: number,
 ): Promise<Build | null> {
     const url = `/api/v2/builders/${builderid}/builds/${number}`
-    return (await fetchData(config, url)).builds[0] || null
+    return (await fetchData(config, url)).builds?.[0] ?? null
 }
 
 export async function getRequests(config: Config, reqids: number[]): Promise<BuildRequest[]> {
@@ -197,8 +203,4 @@ export async function getRequests(config: Config, reqids: number[]): Promise<Bui
 export async function getBuildset(config: Config, id: number): Promise<BuildSet | null> {
     const url = `/api/v2/buildsets/${id}`
     return (await fetchData(config, url)).buildsets[0] ?? null
-}
-
-export async function getBuild(config: Config, id: number): Promise<Build | null> {
-    return (await fetchData(config, `/api/v2/builds/${id}`)).builds[0] || null
 }

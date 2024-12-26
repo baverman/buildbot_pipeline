@@ -6,8 +6,8 @@ import { fmtDuration, fmtAge, resultClass } from '../utils'
 import { type Build } from '../types'
 
 const config = inject('config') as Config
-const builds = ref<Build[]>([])
 const props = defineProps<{ id: number }>()
+const builds = ref<Build[]>([])
 
 async function getData() {
     const url = `/api/v2/builders/${props.id}/builds?limit=100&order=-number&property=owners&property=workername`

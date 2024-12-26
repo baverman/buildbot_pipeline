@@ -12,6 +12,9 @@ const reason = ref('')
 
 async function getData() {
     worker.value = await api.getWorker(config, props.id)
+    if (!worker.value) {
+        throw new api.AppError('Worker not found')
+    }
 }
 
 async function action(method: string) {

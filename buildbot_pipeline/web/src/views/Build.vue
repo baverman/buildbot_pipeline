@@ -31,7 +31,7 @@ const data = ref<Data | null>(null)
 async function getData() {
     const b = await api.getBuildByNumber(config, props.builderid, props.number)
     if (!b) {
-        return
+        throw new api.AppError('Build not found')
     }
 
     const [breqs, w] = await Promise.all([
