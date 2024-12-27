@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
-import { getBuildProperties, type Config } from '../api'
+import { ref } from 'vue'
+import { getBuildProperties } from '../api'
 import { type Build, type Properties } from '../types'
 import Loader from './Loader.vue'
 
-const config = inject('config') as Config
 const props = defineProps<{ build: Build }>()
 const properties = ref<Properties>({})
 
 async function getData() {
-    properties.value = await getBuildProperties(config, props.build.buildid)
+    properties.value = await getBuildProperties(props.build.buildid)
 }
 
 function copy(event: Event) {

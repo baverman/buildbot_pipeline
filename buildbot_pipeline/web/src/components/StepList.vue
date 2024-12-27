@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
-import { getBuildSteps, type Config } from '../api'
+import { ref } from 'vue'
+import { getBuildSteps } from '../api'
 import StepListRow from './StepListRow.vue'
 import Loader from './Loader.vue'
 import { type Build, type Step } from '../types'
 
-const config = inject('config') as Config
 const props = defineProps<{ build: Build; filterSteps: number }>()
 const steps = ref<Step[]>([])
 
@@ -14,7 +13,7 @@ function includeStep(step: Step, fstate: number) {
 }
 
 async function getData() {
-    steps.value = await getBuildSteps(config, props.build.buildid)
+    steps.value = await getBuildSteps(props.build.buildid)
     setTimeout(poll, 5000)
 }
 

@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 import Loader from '../components/Loader.vue'
-import { fetchData, type Config } from '../api'
+import { fetchData } from '../api'
 import { fmtDuration, fmtAge, resultClass } from '../utils'
 import { type Build } from '../types'
 
-const config = inject('config') as Config
 const props = defineProps<{ id: number }>()
 const builds = ref<Build[]>([])
 
 async function getData() {
     const url = `/api/v2/builders/${props.id}/builds?limit=100&order=-number&property=owners&property=workername`
-    const data = await fetchData(config, url)
+    const data = await fetchData(url)
     builds.value = data.builds || []
 }
 
@@ -19,7 +18,7 @@ async function loadMore() {
     const blist = builds.value
     const last_num = blist[blist.length - 1].number
     const url = `/api/v2/builders/${props.id}/builds?limit=100&order=-number&number__lt=${last_num}&property=owners&property=workername`
-    const data = await fetchData(config, url)
+    const data = await fetchData(url)
     builds.value = blist.concat(data.builds)
 }
 

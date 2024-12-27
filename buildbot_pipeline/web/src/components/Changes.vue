@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 import Loader from './Loader.vue'
-import { getChangesBySSID, type Config } from '../api'
+import { getChangesBySSID } from '../api'
 import { type Change, type BuildSet } from '../types'
 
-const config = inject('config') as Config
 const props = defineProps<{ buildset: BuildSet }>()
 const buildset = props.buildset
 const changes = ref<Change[]>([])
 
 async function getData() {
-    const plist = buildset.sourcestamps.map((it) => getChangesBySSID(config, it.ssid))
+    const plist = buildset.sourcestamps.map((it) => getChangesBySSID(it.ssid))
     const cl = await Promise.all(plist)
     const result = []
     for (const it of cl) {

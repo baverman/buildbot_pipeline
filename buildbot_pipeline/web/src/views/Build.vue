@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import StepList from '../components/StepList.vue'
@@ -21,7 +21,6 @@ interface Data {
 }
 
 const router = useRouter()
-const config = inject('config') as api.Config
 
 const props = defineProps<{ builderid: number; number: number; tab?: string }>()
 const tab = ref(props.tab ?? 'steps')
@@ -29,22 +28,22 @@ const tab = ref(props.tab ?? 'steps')
 const data = ref<Data | null>(null)
 
 async function getData() {
-    const b = await api.getBuildByNumber(config, props.builderid, props.number)
+    const b = await api.getBuildByNumber(props.builderid, props.number)
     if (!b) {
         throw new api.AppError('Build not found')
     }
 
     const [breqs, w] = await Promise.all([
-        api.getRequests(config, [b.buildrequestid]),
-        api.getWorker(config, b.workerid),
+        api.getRequests([b.buildrequestid]),
+        api.getWorker(b.workerid),
     ])
     const breq = breqs[0]
-    const bs = (await api.getBuildset(config, breq.buildsetid))!
+    const bs = (await api.getBuildset(breq.buildsetid))!
     let pb = undefined
     let parent_builder_name = undefined
     if (bs.parent_buildid) {
-        pb = (await api.getBuild(config, bs.parent_buildid))!
-        parent_builder_name = await api.getBuilderName(config, pb.builderid)
+        pb = (await api.getBuild(bs.parent_buildid))!
+        parent_builder_name = await api.getBuilderName(pb.builderid)
     }
     data.value = {
         build: b,
@@ -60,7 +59,7 @@ async function poll() {
     if (!data.value || data.value.build.results != null) {
         return
     }
-    data.value.build = (await api.getBuildByNumber(config, props.builderid, props.number))!
+    data.value.build = (await api.getBuildByNumber(props.builderid, props.number))!
     setTimeout(poll, 5000)
 }
 
@@ -75,12 +74,12 @@ function changeTab(newTab: string) {
 
 async function rebuild() {
     const build = data.value!.build
-    const result = await api.sendBuildAction(config, build.buildid, 'rebuild')
+    const result = await api.sendBuildAction(build.buildid, 'rebuild')
     const breq = result.result.length && Object.values(result.result[1])[0]
     if (breq) {
         for (let i = 0; i < 10; i++) {
             await new Promise((r) => setTimeout(r, 300))
-            const builds = await api.getBuildsByRequest(config, [breq])
+            const builds = await api.getBuildsByRequest([breq])
             if (builds.length) {
                 router.push(buildLink(builds[0]))
                 return
@@ -92,7 +91,7 @@ async function rebuild() {
 }
 
 async function stop() {
-    await api.sendBuildAction(config, data.value!.build.buildid, 'stop')
+    await api.sendBuildAction(data.value!.build.buildid, 'stop')
 }
 
 const load = getData()

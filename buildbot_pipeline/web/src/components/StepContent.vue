@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 import * as api from '../api'
 import Log from './Log.vue'
 import Build from './Build.vue'
@@ -7,7 +7,6 @@ import Loader from './Loader.vue'
 import { parseStepUrls, type RequestUrl, type BuildUrl } from '../utils'
 import { type Log as LogT, type StepUrl, type Build as BuildT, type Step } from '../types'
 
-const config = inject('config') as api.Config
 const props = defineProps<{ step: Step }>()
 const logs = ref<LogT[]>([])
 
@@ -18,7 +17,7 @@ const builds = ref<BuildT[]>([])
 const other_urls = ref<StepUrl[]>([])
 
 async function getData() {
-    logs.value = await api.getStepLogs(config, props.step.stepid)
+    logs.value = await api.getStepLogs(props.step.stepid)
     const data = parseStepUrls(props.step.urls)
     data_builds.value = data.builds
     data_requests.value = data.requests
@@ -31,12 +30,8 @@ function hasUncompletedBuilds(builds: BuildT[]) {
 }
 
 async function poll() {
-    await api.getBuilderNames(
-        config,
-        data_builds.value.map((it) => it.builderid),
-    )
+    await api.getBuilderNames(data_builds.value.map((it) => it.builderid))
     builds.value = await api.getBuildsByRequest(
-        config,
         data_requests.value.map((it) => it.reqid),
         { properties: ['virtual_builder_title'] },
     )

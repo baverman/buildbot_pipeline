@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { inject, ref, onMounted } from 'vue'
-import { getBuilderNames, type Config } from '../api'
+import { ref, onMounted } from 'vue'
+import { getBuilderNames } from '../api'
 import { resultClass, resultTitle, fmtDuration } from '../utils'
 import { type Build } from '../types'
 import StepList from './StepList.vue'
 
-const config = inject('config') as Config
 const props = defineProps<{ build: Build }>()
 
 const builder_name = ref<string | null>(null)
@@ -25,8 +24,7 @@ async function getData() {
         builder_name.value = props.build.properties.virtual_builder_title[0]
     } else {
         builder_name.value =
-            (await getBuilderNames(config, [props.build.builderid])).get(props.build.builderid) ??
-            'unknown'
+            (await getBuilderNames([props.build.builderid])).get(props.build.builderid) ?? 'unknown'
     }
 }
 

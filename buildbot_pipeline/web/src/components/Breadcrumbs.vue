@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { getBuilderName, getWorker, type Config } from '../api'
+import { getBuilderName, getWorker } from '../api'
 
 type Entry = [string | string[] | number, object, string?]
 
-const config = inject('config') as Config
 const router = useRouter()
 const bc = ref<Entry[]>([])
 const active_name = ref('')
@@ -17,16 +16,16 @@ router.beforeEach(async (to) => {
     active_name.value = to.name as string
 
     if (to.name == 'build') {
-        const bname = await getBuilderName(config, parseInt(to.params.builderid as string))
+        const bname = await getBuilderName(parseInt(to.params.builderid as string))
         result.push([bname, { name: 'builder', params: { id: to.params.builderid } }, sep])
         result.push([to.params.number, { name: 'build', params: to.params }, sep])
     } else if (to.name == 'builder') {
-        const bname = await getBuilderName(config, parseInt(to.params.id as string))
+        const bname = await getBuilderName(parseInt(to.params.id as string))
         result.push([bname, { name: 'builder', params: { id: to.params.id } }, sep])
     } else if (to.name == 'workers' || to.name == 'index') {
         result.push(['Workers', { name: 'workers' }])
     } else if (to.name == 'worker') {
-        const w = await getWorker(config, parseInt(to.params.id as string))
+        const w = await getWorker(parseInt(to.params.id as string))
         result.push(['Workers', { name: 'workers' }])
         result.push([
             (w && w.name) || 'unknown',

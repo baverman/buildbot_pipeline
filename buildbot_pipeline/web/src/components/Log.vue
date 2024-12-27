@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 import ToggleArrow from './ToggleArrow.vue'
 import Activated from './Activated.vue'
 import LogContent from './LogContent.vue'
-import { type Config } from '../api'
 import { type Log } from '../types'
 
-const config = inject('config') as Config
 const props = defineProps<{ log: Log }>()
 const details = ref(false)
 </script>
@@ -21,7 +19,7 @@ const details = ref(false)
             <div class="cbox-push">
                 <a
                     @click.stop=""
-                    :href="config.backend + `/api/v2/logs/${props.log.logid}/raw?_download=0`"
+                    :href="`/api/v2/logs/${props.log.logid}/raw?_download=0`"
                     target="_blank"
                     >view</a
                 >
@@ -29,7 +27,7 @@ const details = ref(false)
                     &nbsp;
                     <a
                         @click.stop=""
-                        :href="config.backend + `/api/v2/logs/${props.log.logid}/raw`"
+                        :href="`/api/v2/logs/${props.log.logid}/raw`"
                         class="log-button-small"
                     >
                         <i class="fa fa-download" aria-hidden="true"></i>&nbsp;download

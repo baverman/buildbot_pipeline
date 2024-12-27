@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
-import { getRelatedBuilds, getBuilders, type Config } from '../api'
+import { ref } from 'vue'
+import { getRelatedBuilds, getBuilders } from '../api'
 import { resultClass } from '../utils'
 import { type Build, type Builder } from '../types'
 import Loader from './Loader.vue'
 
-const config = inject('config') as Config
 const props = defineProps<{ build: Build }>()
 const build = props.build
 const builders = ref<Builder[]>([])
@@ -20,7 +19,7 @@ function showBuilder(it: Builder) {
 }
 
 async function getData() {
-    const cbuilds = await getRelatedBuilds(config, build.buildid)
+    const cbuilds = await getRelatedBuilds(build.buildid)
     const b2b = new Map()
     for (const b of cbuilds) {
         const k = b.builderid
@@ -31,7 +30,7 @@ async function getData() {
         }
     }
 
-    builders.value = (await getBuilders(config, Array.from(b2b.keys()))).filter(showBuilder)
+    builders.value = (await getBuilders(Array.from(b2b.keys()))).filter(showBuilder)
     builds.value = b2b
 }
 

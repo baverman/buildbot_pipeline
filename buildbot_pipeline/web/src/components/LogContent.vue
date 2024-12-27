@@ -12,13 +12,12 @@ const el = ref<HTMLPreElement | null>(null)
 async function getData() {
     const log = props.log
     if (log.type == 'h') {
-        const chunks = await getLogContent(config, log.logid)
+        const chunks = await getLogContent(log.logid)
         const result = chunks.map((it) => it.content)
         hcontent.value = result.join('')
         return
     }
     const chunks = await getLogContent(
-        config,
         log.logid,
         Math.max(0, log.num_lines - config.log_limit),
         config.log_limit,

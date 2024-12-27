@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 import Loader from '../components/Loader.vue'
 import * as api from '../api'
 import { type Worker } from '../types'
 
-const config = inject('config') as api.Config
-
 const workers = ref<Worker[] | null>(null)
 
 async function getData() {
-    workers.value = await api.getWorkers(config)
+    workers.value = await api.getWorkers()
 }
 
 function getState(worker: Worker): string {

@@ -1,19 +1,18 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
-import { getAllBuilders, getBuilderBuilds, type Config } from '../api'
+import { ref } from 'vue'
+import { getAllBuilders, getBuilderBuilds } from '../api'
 import { type Build, type Builder } from '../types'
 import { resultClass } from '../utils'
 import Loader from '../components/Loader.vue'
-const config = inject('config') as Config
 
 async function getBuilders() {
-    const builders = await getAllBuilders(config)
+    const builders = await getAllBuilders()
     return (builders || []).filter((it) => !~it.tags.indexOf('hidden'))
 }
 
 async function getBuilds(builder_ids: number[]) {
     const result = new Map<number, Build[]>()
-    const builds = await getBuilderBuilds(config, builder_ids)
+    const builds = await getBuilderBuilds(builder_ids)
     for (const it of builds) {
         if (result.has(it.builderid)) {
             result.get(it.builderid)!.push(it)
