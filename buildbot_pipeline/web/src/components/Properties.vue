@@ -38,7 +38,8 @@ const load = getData()
                 <tr v-for="(value, name) in properties" :key="name">
                     <td>{{ name }}</td>
                     <td>
-                        <span class="properties-value">{{ value[0] }}</span>
+                        <span class="properties-value">{{ value[0] }}</span
+                        >&nbsp;
                         <i @click="copy" class="properties-copy fa fa-clone" aria-hidden="true"></i>
                     </td>
                     <td>{{ value[1] }}</td>
